@@ -1,12 +1,15 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 use axum::{BoxError, debug_handler, extract, Json};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use diesel::{Insertable, Queryable, RunQueryDsl, Selectable};
+use nostr_sdk::EventId;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::uuid;
+use crate::service::nostr::model::JobAnswer;
 use crate::tee::model::*;
 use crate::server::server::SharedState;
 use crate::tee::model::list_questions;
@@ -43,7 +46,7 @@ pub async fn tee_question_handler(State(server): State<SharedState>, req: Json<Q
         let mut server = server.0.write().await;
 
         let mut conn = server.pg.get().expect("Failed to get a connection from pool");
-        let q = create_question(&mut conn, request_id.clone(), req.message.clone(), req.message_id.clone(), req.conversation_id.clone(), req.model.clone(), req.callback_url.clone());
+        let q = create_question(&mut conn, request_id.clone(), req.message.clone(), req.message_id.clone(), req.conversation_id.clone(), req.model.clone(), req.callback_url.clone()).expect("Error saving new question");
 
 
         tracing::info!("request_id: {}", request_id);
@@ -56,6 +59,7 @@ pub async fn tee_question_handler(State(server): State<SharedState>, req: Json<Q
             prompt_hash: "".to_string(),
             signature: "".to_string(),
             params: req.params.clone(),
+            r#type: "".to_string(),
         };
 
 
@@ -121,6 +125,13 @@ pub async fn tee_callback(State(server): State<SharedState>, Json(req): Json<Ans
 
     let server = server.0.read().await;
     let mut conn = server.pg.get().expect("Failed to get a connection from pool");
+
+    if let Some(job_status_tx) = server.job_status_tx.clone() {
+        job_status_tx.send(JobAnswer {
+            event_id: EventId::from_str(&req.request_id).unwrap(),
+            answer: req.answer.clone(),
+        }).await.unwrap();
+    }
 
     match create_tee_answer(&mut conn, &req) {
         Ok(_) => {

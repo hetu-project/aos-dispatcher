@@ -1,4 +1,6 @@
 use axum::{debug_handler, extract::State, Json};
+use nostr_sdk::EventId;
+use crate::service::nostr::model::JobAnswer;
 use crate::tee::model::{Answer, AnswerResp, QuestionReq};
 use crate::server::server::SharedState;
 use uuid::Uuid;
@@ -8,6 +10,7 @@ use diesel::{PgConnection, RunQueryDsl};
 use crate::opml::model::*;
 use crate::schema::opml_answers::dsl::opml_answers;
 use tokio::time::{timeout, Duration};
+use std::str::FromStr;
 use std::time::Duration as StdDuration;
 use tokio::sync::mpsc;
 
@@ -92,6 +95,12 @@ pub async fn opml_callback(State(server): State<SharedState>, Json(req): Json<Op
 
     let mut server = server.0.write().await;
     let mut conn = server.pg.get().expect("Failed to get a connection from pool");
+    if let Some(job_status_tx) = server.job_status_tx.clone() {
+        job_status_tx.send(JobAnswer {
+            event_id: EventId::from_str(&req.req_id).unwrap(),
+            answer: req.answer.clone(),
+        }).await.unwrap();
+    }
 
     match create_opml_answer(&mut conn, &req) {
         Ok(_) => {
