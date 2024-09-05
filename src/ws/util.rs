@@ -56,10 +56,10 @@ pub async fn receive_job_result(
         tracing::debug!("job of operator id {} connect saved", p.operator);
         let mut server = server.0.write().await;
         let jr = JobResult {
-            id: p.id.clone(),
-            job_id: p.id,
+            id: format!("{}_{}", p.operator.clone(), p.job_id.clone()),
+            job_id: p.job_id.clone(),
             operator: p.operator,
-            result: todo!(),
+            result: p.result.into(),
             signature: "".into(),
             job_type: "".into(),
             created_at: chrono::Local::now().naive_local(),

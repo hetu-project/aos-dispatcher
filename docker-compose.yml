@@ -1,0 +1,37 @@
+# version: '3.8'
+
+services:
+  postgres:
+    container_name: dispatcher_postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      PGDATA: /data/postgres
+    # volumes:
+    #    - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+  
+  dispatcher:
+    container_name: dispatcher_container
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: aos-dispatcher
+    environment:
+      DATABASE_URL: postgres://postgres:123456@postgres:5432/dispatcher
+    # volumes:
+    #    - pgadmin:/var/lib/pgadmin
+    ports:
+      - "3000:3000"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
