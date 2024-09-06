@@ -19,6 +19,7 @@ diesel::table! {
     job_request (id) {
         id -> Varchar,
         job -> Json,
+        clock -> Json,
         job_type -> Varchar,
         status -> Varchar,
         created_at -> Timestamp,
@@ -31,6 +32,7 @@ diesel::table! {
         job_id -> Varchar,
         operator -> Varchar,
         result -> Json,
+        clock -> Json,
         signature -> Varchar,
         job_type -> Varchar,
         created_at -> Timestamp,

@@ -47,6 +47,7 @@ CREATE TABLE "answers"(
 CREATE TABLE "job_request"(
 	"id" VARCHAR NOT NULL PRIMARY KEY,
 	"job" JSON NOT NULL,
+	"clock" JSON NOT NULL,
 	"job_type" VARCHAR NOT NULL,
 	"status" VARCHAR NOT NULL,
 	"created_at" TIMESTAMP NOT NULL
@@ -57,6 +58,7 @@ CREATE TABLE "job_result"(
 	"job_id" VARCHAR NOT NULL,
 	"operator" VARCHAR NOT NULL,
 	"result" JSON NOT NULL,
+	"clock" JSON NOT NULL,
 	"signature" VARCHAR NOT NULL,
 	"job_type" VARCHAR NOT NULL,
 	"created_at" TIMESTAMP NOT NULL

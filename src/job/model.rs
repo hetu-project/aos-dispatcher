@@ -88,6 +88,9 @@ impl Into<JobRequest> for JobTask {
         let q = JobRequest {
             id: id,
             job,
+            clock: json!({
+                "1": "1",
+            }),
             status: status,
             job_type: job_type,
             created_at: chrono::Local::now().naive_local(),

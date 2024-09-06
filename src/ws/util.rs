@@ -1,4 +1,5 @@
 use axum::extract::ws::Message;
+use serde_json::json;
 use tokio::sync::mpsc;
 
 use crate::{db::pg::{model::{Answer, JobResult}, util::{create_job_answer, create_job_result}}, server::server::SharedState};
@@ -62,6 +63,9 @@ pub async fn receive_job_result(
             result: p.result.into(),
             signature: "".into(),
             job_type: "".into(),
+            clock: json!({
+                "1": "2",
+            }),
             created_at: chrono::Local::now().naive_local(),
         };
         let mut conn = server.pg.get().expect("Failed to get a connection from pool");
