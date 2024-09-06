@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use alloy::{network::{EthereumWallet, NetworkWallet}, primitives::{address, Address, U256}, providers::ProviderBuilder, signers::local::{coins_bip39::English, MnemonicBuilder}, sol};
+use alloy::{network::{AnyNetwork, EthereumWallet, NetworkWallet}, primitives::{address, Address, U256}, providers::ProviderBuilder, signers::local::{coins_bip39::English, MnemonicBuilder}, sol};
 use anyhow::Result;
 
 use crate::db::pg::model::Operator;
@@ -30,6 +30,7 @@ pub async fn register_operator(op: &Operator, start: u32, end: u32) -> Result<()
   tracing::info!("Wallet: {}", wallet.default_signer().address());
   let provider = ProviderBuilder::new()
     .with_recommended_fillers()
+    .network::<AnyNetwork>()
     .wallet(wallet)
     .on_http(rpc_url);
 
@@ -54,16 +55,23 @@ pub async fn register_operator(op: &Operator, start: u32, end: u32) -> Result<()
 
 
   tracing::debug!("start submit register tx on chain");
-  let register_r = contract.registerOperator(op_addr, U256::from(start), U256::from(end)).call().await;
-  match register_r {
+  match contract
+  .registerOperator(op_addr, U256::from(start), U256::from(end))
+  // .call().await;
+  .send().await {
     Ok(r) => {
+      r.get_receipt().await.unwrap();
       tracing::debug!("register on chain success");
 
     },
     Err(e) => {
       tracing::error!("register on chain error {}", e);
       tracing::debug!("start update operator  on chain");
-      let _ur = contract.updateOperatorRange(op_addr, U256::from(start), U256::from(end)).call().await?;
+      let _ur = contract
+      .updateOperatorRange(op_addr, U256::from(start), U256::from(end))
+      .send().await?
+      .get_receipt().await?;
+      // .call().await?;
       tracing::debug!("update operator  on chain success");
 
     },
