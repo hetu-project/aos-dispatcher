@@ -21,7 +21,9 @@ uuid = { version = "1", features = ["v4"] }
 diesel = { version = "2.2.1", features = ["postgres", "r2d2", "chrono", "serde_json"] }
 dotenvy = "0.15"
 chrono = "0.4"
-alloy = { version = "0.3", features = ["full"] }
+alloy = { version = "0.3", features = ["full", "signer-mnemonic"] }
 nostr-sdk = "0.34.0"
 nostr = "0.34.0"
 toml = "0.8.19"
+anyhow = "1.0"
+thiserror = "1.0"
