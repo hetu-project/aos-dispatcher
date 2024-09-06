@@ -5,7 +5,7 @@ RUN cargo build --release
 
 
 
-FROM debian:bullseye as prod
+FROM debian:bullseye AS prod
 RUN  apt-get update && apt-get -y install libpq5
 
 WORKDIR /usr/src/app

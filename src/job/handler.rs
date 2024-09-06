@@ -33,7 +33,10 @@ pub async fn submit_job(State(server): State<SharedState>, Json(req): Json<Submi
   let q = pg::util::create_job_request(&mut conn, &question).expect("Error saving new question");
 
   // dispatch task
-  dispatch_tx.send(2).await.unwrap();
+
+  if let Err(err) = dispatch_tx.send(2).await {
+   tracing::error!("dispatch task when submit job {}", err);   
+  }
 
   Json(json!({
     "code": 200,

@@ -29,10 +29,14 @@ pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
     while let Some(i) = rx.recv().await {
         tracing::info!("start dispatch task {}", i);
         let server = server.0.write().await;
-        let mut conn = server
+        let mut conn = if let Ok(c)  = server
             .pg
-            .get()
-            .expect("Failed to get a connection from pool");
+            .get() {
+                c
+            } else {
+                tracing::error!("Failed to get a connection from pool");
+                continue;
+            };
         let questions = query_new_job_request(&mut conn).unwrap_or_default();
         let dispatch_question = questions.iter().next();
 
@@ -111,7 +115,9 @@ pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
                         ]),
                         result: None,
                     };
-                    tx.send(msg.into()).await.unwrap();
+                    if let Err(e) = tx.send(msg.into()).await {
+                        tracing::error!("Send Message {}", e);
+                    };
 
                     // TODO create job result with status
                 }
