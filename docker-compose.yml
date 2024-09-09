@@ -6,7 +6,7 @@ services:
     image: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hetuproject}
       PGDATA: /data/postgres
     # volumes:
     #    - postgres:/data/postgres
@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
     image: aos-dispatcher
     environment:
-      DATABASE_URL: postgres://postgres:123456@postgres:5432/dispatcher
+      DATABASE_URL: postgres://postgres:hetuproject@postgres:5432/dispatcher
     # volumes:
     #    - pgadmin:/var/lib/pgadmin
     ports:
