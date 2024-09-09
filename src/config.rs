@@ -68,7 +68,7 @@ impl Config {
                 port: 3000,
             },
             database: DatabaseConfig {
-                url: "postgres://postgres:123456@127.0.0.1:5432/dispatcher".to_string(),
+                url: "postgres://postgres:hetuproject@127.0.0.1:5432/dispatcher".to_string(),
             },
             secret_key: SecretKey::default(),
             custom_config: CustomConfig::default(),
