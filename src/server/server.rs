@@ -18,6 +18,7 @@ use crate::opml::model::{OpmlAnswer, OpmlRequest};
 
 #[derive(Debug, Clone)]
 pub struct Server {
+    pub config: Config,
     pub sign_key: SigningKey,
     pub nostr_keys: nostr::Keys,
     pub tee_operator_collections: HashMap<String, Operator>,
@@ -58,6 +59,7 @@ impl Server {
         let pg = Pool::builder().build(manager).expect("Failed to create pool.");
 
         Self {
+            config,
             sign_key,
             nostr_keys,
             tee_operator_collections: Default::default(),

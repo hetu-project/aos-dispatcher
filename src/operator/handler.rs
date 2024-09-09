@@ -58,7 +58,7 @@ pub async fn register(State(server): State<SharedState>, Json(req): Json<Operato
   operator.start = sample_range.0.to_string();
   operator.end = sample_range.1.to_string();
   tracing::debug!("operator {:#?} {:#?}", &operator.start, &operator.end);
-  register_operator(&operator, sample_range.0, sample_range.1).await.unwrap();
+  register_operator(&operator, sample_range.0, sample_range.1, &server.config.custom_config).await.unwrap();
   let r = create_operator(&mut conn, &operator);
 
   if let Err(e) = r {

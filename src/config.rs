@@ -2,6 +2,13 @@ use ed25519_dalek::SecretKey;
 use nostr::nips::nip06::FromMnemonic;
 use nostr_sdk::Keys;
 use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct CustomRegister {
+    pub endpoint: Option<String>,
+    pub contract: Option<String>,
+    pub account: Option<String>,
+}
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct CustomConfig {
     pub log_level: Option<String>,
@@ -9,6 +16,7 @@ pub struct CustomConfig {
     pub port: Option<u16>,
     pub mnemonic: Option<String>,
     pub default_relay: Option<String>,
+    pub register: Option<CustomRegister>,
 }
 impl CustomConfig {
     pub async fn from_toml() -> Self {
@@ -32,21 +40,22 @@ impl CustomConfig {
         custom
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub secret_key: SecretKey,
+    pub custom_config: CustomConfig,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
     // pub log_level: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DatabaseConfig {
     pub url: String,
 }
@@ -62,6 +71,7 @@ impl Config {
                 url: "postgres://postgres:123456@127.0.0.1:5432/dispatcher".to_string(),
             },
             secret_key: SecretKey::default(),
+            custom_config: CustomConfig::default(),
         }
     }
 
@@ -73,6 +83,7 @@ impl Config {
             let pair = Keys::from_mnemonic(mnemonic, None).unwrap();
             pair.secret_key().unwrap().secret_bytes()
         });
+        config.custom_config = custom.clone();
         config
     }
 

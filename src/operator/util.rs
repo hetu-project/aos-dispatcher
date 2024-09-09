@@ -2,10 +2,10 @@
 
 use std::str::FromStr;
 
-use alloy::{network::{AnyNetwork, EthereumWallet, NetworkWallet}, primitives::{address, Address, U256}, providers::ProviderBuilder, signers::local::{coins_bip39::English, MnemonicBuilder}, sol};
-use anyhow::Result;
+use alloy::{network::{AnyNetwork, EthereumWallet}, primitives::{Address, U256}, providers::ProviderBuilder, signers::local::{coins_bip39::English, MnemonicBuilder}, sol};
+use anyhow::{Context, Result};
 
-use crate::db::pg::model::Operator;
+use crate::{config::CustomConfig, db::pg::model::Operator};
 
 // Codegen from ABI file to interact with the contract.
 sol!(
@@ -15,10 +15,21 @@ sol!(
     "abi/vrf_abi.json"
 );
 
-pub async fn register_operator(op: &Operator, start: u32, end: u32) -> Result<()> {
-  let rpc_url = "https://1rpc.io/holesky".parse()?;
+use thiserror::Error;
+#[derive(Error, Debug)]
+pub enum RegisterError {
+    #[error("ConfigNotFound")]
+    ConfigNotFound,
+}
+
+pub async fn register_operator(op: &Operator, start: u32, end: u32, config: &CustomConfig) -> Result<()> {
+  let register = config.register.clone().ok_or(RegisterError::ConfigNotFound).context("register config not found")?;
+  let endpoint = register.endpoint.ok_or(RegisterError::ConfigNotFound).context("endpoint is not found")?;
+  let account = register.account.ok_or(RegisterError::ConfigNotFound).context("account is not found")?;
+  let contract_address = register.contract.ok_or(RegisterError::ConfigNotFound).context("contract is not found")?;
+  let rpc_url = endpoint.parse()?;
   let singer = MnemonicBuilder::<English>::default()
-  .phrase("equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot")
+  .phrase(account)
   // .index(index)?
   // Use this if your mnemonic is encrypted.
   // .password(password)
@@ -36,7 +47,7 @@ pub async fn register_operator(op: &Operator, start: u32, end: u32) -> Result<()
 
   let op_addr = Address::from_str(&op.address)?;
 
-  let contract_addr = Address::from_str("0x27e4384ecc11810c2F49914390052b22c4e3CcC0")?;
+  let contract_addr = Address::from_str(&contract_address)?;
 
   // Create a contract instance.
   let mut contract = VRFRange::new(contract_addr, provider);
