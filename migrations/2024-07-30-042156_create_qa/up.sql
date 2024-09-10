@@ -50,6 +50,7 @@ CREATE TABLE "job_request"(
 	"clock" JSON NOT NULL,
 	"job_type" VARCHAR NOT NULL,
 	"status" VARCHAR NOT NULL,
+	"tag" VARCHAR NOT NULL,
 	"created_at" TIMESTAMP NOT NULL
 );
 

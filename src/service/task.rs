@@ -113,6 +113,7 @@ pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
                             {
                                 "user": "", 
                                 "seed": "",
+                                "tag": q.tag,
                                 "signature": "",
                                 "clock": q.clock,
                                 "job_id": q.id,

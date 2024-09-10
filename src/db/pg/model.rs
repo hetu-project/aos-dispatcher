@@ -94,6 +94,7 @@ pub struct JobRequest {
     pub job: Value,
     pub job_type: String,
     pub status: String,
+    pub tag: String,
     pub clock: Value,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,
