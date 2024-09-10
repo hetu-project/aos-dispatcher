@@ -6,7 +6,7 @@ use serde_json::json;
 use tokio::sync::{mpsc, RwLock};
 
 use crate::{
-    db::pg::util::query_new_job_request, opml::model::OpmlRequest, server::server::SharedState, service::nostr::{model::JobAnswer, util::query_question}, tee::model::{OperatorReq, Params}, ws::msg::{WsMethodMsg, WsResultMsg, WsSendMsg}
+    db::pg::util::{self, query_new_job_request}, opml::model::OpmlRequest, server::server::SharedState, service::nostr::{model::JobAnswer, util::query_question}, tee::model::{OperatorReq, Params}, ws::msg::{WsMethodMsg, WsResultMsg, WsSendMsg}
 };
 
 #[derive(Debug, Clone)]
@@ -90,6 +90,11 @@ pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
 
             // dispatch the question by websocket
             let operators = server.operator_channels.iter();
+            if operators.len() > 0 {
+                if let Err(_)  =  util::update_job_request_status(&mut conn, q){
+                    tracing::error!("update job status dispatched error");
+                }
+            }
 
             for (k, tx) in operators {
                 tracing::debug!("dispatcher task to {}", k);

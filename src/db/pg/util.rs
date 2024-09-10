@@ -93,6 +93,15 @@ pub fn create_job_request(conn: &mut PgConnection, q: &JobRequest) -> Result<Job
       // .expect("Error saving new question")
 }
 
+pub fn update_job_request_status(conn: &mut PgConnection, q: &JobRequest) -> Result<JobRequest, diesel::result::Error> {
+  diesel::update(crate::schema::job_request::table)
+    .filter(job_request::id.eq(q.id.clone()))
+      .set(job_request::status.eq("dispatched"))
+      .returning(JobRequest::as_returning())
+      .get_result(conn)
+      // .expect("Error saving new question")
+}
+
 pub fn create_job_result(conn: &mut PgConnection, ans: &JobResult) -> Result<(), diesel::result::Error> {
   diesel::insert_into(crate::schema::job_result::table)
       .values(ans)
@@ -111,6 +120,7 @@ pub fn get_job_result_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Optio
 pub fn query_new_job_request(conn: &mut PgConnection) -> Result<Vec<JobRequest>, diesel::result::Error> {
   let r = job_request::table
     .select(JobRequest::as_select())
+    .filter(job_request::status.eq_any(["", "created"]))
     // .as_query()
     .load(conn);
   r

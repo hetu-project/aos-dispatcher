@@ -9,6 +9,7 @@ use nostr_sdk::EventId;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::uuid;
+use crate::db::pg::model::JobRequest;
 use crate::db::pg::util::{get_answer_by_id, get_job_result_by_id};
 use crate::job::model::{JobResultReq, JobResultResp, JobTask};
 use crate::service::nostr::model::JobAnswer;
@@ -28,9 +29,10 @@ pub async fn submit_job(State(server): State<SharedState>, Json(req): Json<Submi
   let dispatch_tx = server.dispatch_task_tx.clone().unwrap();
   let keys = &server.nostr_keys;
   let job = JobTask::create_with(&req, keys);
-  let question = job.into();
+  let mut question: JobRequest = job.into();
+  question.status = String::from("created");
   let mut conn = server.pg.get().expect("Failed to get a connection from pool");
-  let q = pg::util::create_job_request(&mut conn, &question).expect("Error saving new question");
+  let q = pg::util::create_job_request(&mut conn, &mut question).expect("Error saving new question");
 
   // dispatch task
 
