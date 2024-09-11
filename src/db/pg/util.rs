@@ -132,6 +132,7 @@ pub fn get_job_results_by_job_id(conn: &mut PgConnection, q_id: &str) -> Result<
 pub fn query_new_job_request(conn: &mut PgConnection) -> Result<Vec<JobRequest>, diesel::result::Error> {
   let r = job_request::table
     .select(JobRequest::as_select())
+    .order(job_request::created_at.desc())
     .filter(job_request::status.eq_any(["", "created"]))
     // .as_query()
     .load(conn);

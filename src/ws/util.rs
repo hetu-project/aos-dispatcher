@@ -46,7 +46,7 @@ pub async fn receive_job_result(
     mut tx: mpsc::Sender<Message>,
     server: SharedState,
 ) -> Result<(), ()>{
-    let operator = msg.params.as_array().and_then(|p| {
+    let result = msg.params.as_array().and_then(|p| {
         let a = p.get(0);
         if let Some(s) = a {
             let p = serde_json::from_value::<JobResultParams>(s.clone()).ok();
@@ -54,7 +54,7 @@ pub async fn receive_job_result(
         }
         None
     });
-    if let Some(p) = operator {
+    if let Some(p) = result {
         tracing::debug!("job of operator id {} connect saved", p.operator);
         let mut server = server.0.write().await;
         let jr = JobResult {
@@ -72,6 +72,8 @@ pub async fn receive_job_result(
         let mut conn = server.pg.get().expect("Failed to get a connection from pool");
 
         let _ = create_job_result(&mut conn, &jr);
+    }else {
+         tracing::error!("there is no job result");
     }
     Ok(())
 }

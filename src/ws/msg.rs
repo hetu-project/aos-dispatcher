@@ -66,7 +66,7 @@ pub struct JobResultParams {
   pub job_id: String,
   pub result: Value,
   pub operator: String,
-  pub hash: String,
+  // pub hash: String,
   pub signature: String,
 }
 
