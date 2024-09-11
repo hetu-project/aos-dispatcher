@@ -121,9 +121,9 @@ pub fn get_job_result_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Optio
       .optional()
 }
 
-pub fn get_job_results_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Vec<JobResult>, diesel::result::Error> {
+pub fn get_job_results_by_job_id(conn: &mut PgConnection, q_id: &str) -> Result<Vec<JobResult>, diesel::result::Error> {
   job_result::table
-      .filter(job_result::id.eq(q_id))
+      .filter(job_result::job_id.eq(q_id))
       .load(conn)
 }
 

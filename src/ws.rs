@@ -66,7 +66,7 @@ async fn handle_socket(
                   Message::Text(t) => {
                     let command = util::convert_to_msg(t);
                     if let Ok(method_msg) = command {
-                      tracing::debug!("Text {:#?}", method_msg);
+                      tracing::debug!("Receive method msg {:#?}", method_msg);
 
                        if &method_msg.method == &Some("connect".into()) {
                         let result: WsResultMsg;
