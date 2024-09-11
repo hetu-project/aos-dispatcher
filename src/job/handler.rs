@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::uuid;
 use crate::db::pg::model::JobRequest;
-use crate::db::pg::util::{get_answer_by_id, get_job_result_by_id};
+use crate::db::pg::util::{get_answer_by_id, get_job_result_by_id, get_job_results_by_id};
 use crate::job::model::{JobResultReq, JobResultResp, JobTask};
 use crate::service::nostr::model::JobAnswer;
 use crate::tee::model::*;
@@ -52,7 +52,7 @@ pub async fn query_job_result(State(server): State<SharedState>, Json(req): Json
     let mut server = server.0.write().await;
 
     let mut conn = server.pg.get().expect("Failed to get a connection from pool");
-    let answer = get_job_result_by_id(&mut conn, &req.id.to_string()).unwrap();
+    let answer = get_job_results_by_id(&mut conn, &req.id.to_string()).unwrap_or_default();
 
     let response = json!({
         "code": 200,

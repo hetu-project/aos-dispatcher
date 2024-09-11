@@ -109,12 +109,24 @@ pub fn create_job_result(conn: &mut PgConnection, ans: &JobResult) -> Result<(),
   Ok(())
 }
 
+// pub fn get_job_request_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Vec<JobRequest>, diesel::result::Error> {
+//   job_request::table
+//   .filter(job_request::id.eq(q_id))
+// }
+
 pub fn get_job_result_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Option<JobResult>, diesel::result::Error> {
   job_result::table
       .filter(job_result::id.eq(q_id))
       .first::<JobResult>(conn)
       .optional()
 }
+
+pub fn get_job_results_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Vec<JobResult>, diesel::result::Error> {
+  job_result::table
+      .filter(job_result::id.eq(q_id))
+      .load(conn)
+}
+
 
 
 pub fn query_new_job_request(conn: &mut PgConnection) -> Result<Vec<JobRequest>, diesel::result::Error> {
