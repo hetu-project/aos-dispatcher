@@ -9,6 +9,33 @@ pub struct CustomRegister {
     pub contract: Option<String>,
     pub account: Option<String>,
 }
+
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct CustomServer {
+    pub host: Option<String>,
+    pub port: Option<u16>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct CustomLog {
+    pub level: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct CustomNostr {
+    pub relay: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct CustomDb {
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct CustomAccount {
+    pub mnemonic: Option<String>,
+}
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct CustomConfig {
     pub log_level: Option<String>,
@@ -16,7 +43,11 @@ pub struct CustomConfig {
     pub port: Option<u16>,
     pub mnemonic: Option<String>,
     pub default_relay: Option<String>,
+    pub server: Option<CustomServer>,
     pub register: Option<CustomRegister>,
+    pub log: Option<CustomLog>,
+    pub nostr: Option<CustomNostr>,
+    pub account: Option<CustomAccount>,
 }
 impl CustomConfig {
     pub async fn from_toml() -> Self {

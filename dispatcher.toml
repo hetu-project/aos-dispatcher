@@ -5,6 +5,26 @@ mnemonic = "equal dragon fabric refuse stable cherry smoke allow alley easy neve
 
 default_relay = "ws://localhost:7010"
 
+
+[log]
+
+level="debug"
+
+[nostr]
+relay="ws://localhost:7010"
+
+
+[server]
+host = "0.0.0.0"
+port = 3000
+
+[db]
+url="postgres://postgres:hetuproject@127.0.0.1:5432/dispatcher"
+
+[account]
+mnemonic = "equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot"
+
+
 [register]
 # rpc endpoint
 endpoint = "https://1rpc.io/holesky"
