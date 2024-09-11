@@ -25,7 +25,7 @@ pub struct SubmitJobResp {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobResultReq {
-    pub job_id: Value,
+    pub job_id: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobResultResp {
