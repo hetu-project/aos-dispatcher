@@ -18,6 +18,7 @@ diesel::table! {
 diesel::table! {
     job_request (id) {
         id -> Varchar,
+        user -> Varchar,
         job -> Json,
         clock -> Json,
         job_type -> Varchar,
@@ -33,6 +34,7 @@ diesel::table! {
         job_id -> Varchar,
         operator -> Varchar,
         result -> Json,
+        tag -> Varchar,
         clock -> Json,
         signature -> Varchar,
         job_type -> Varchar,
@@ -76,6 +78,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    project (id) {
+        id -> Varchar,
+        name -> Varchar,
+        address -> Varchar,
+        status -> Varchar,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     questions (request_id) {
         request_id -> Varchar,
         message_id -> Varchar,
@@ -89,6 +101,17 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    user (id) {
+        id -> Varchar,
+        name -> Varchar,
+        address -> Varchar,
+        status -> Varchar,
+        tag -> Varchar,
+        created_at -> Timestamp,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     answers,
     job_request,
@@ -96,5 +119,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     operator,
     opml_answers,
     opml_questions,
+    project,
     questions,
+    user,
 );

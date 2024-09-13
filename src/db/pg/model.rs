@@ -92,6 +92,7 @@ pub struct Operator {
 pub struct JobRequest {
     pub id: String,
     pub job: Value,
+    pub user: String,
     pub job_type: String,
     pub status: String,
     pub tag: String,
@@ -111,6 +112,34 @@ pub struct JobResult {
     pub clock: Value,
     pub signature: String,
     pub job_type: String,
+    #[serde(serialize_with = "serialize_naive_datetime")]
+    pub created_at: NaiveDateTime,
+}
+
+
+#[derive(Queryable, Selectable, Insertable, Serialize)]
+#[diesel(table_name = crate::schema::project)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Project {
+    pub id: String,
+    pub name: String,
+    pub address: String,
+    pub status: String,
+    #[serde(serialize_with = "serialize_naive_datetime")]
+    pub created_at: NaiveDateTime,
+}
+
+
+
+#[derive(Queryable, Selectable, Insertable, Serialize)]
+#[diesel(table_name = crate::schema::user)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct User {
+    pub id: String,
+    pub name: String,
+    pub address: String,
+    pub status: String,
+    pub tag: String,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,
 }

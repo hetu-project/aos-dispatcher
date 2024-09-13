@@ -12,6 +12,7 @@ use crate::db::pg::model::{JobRequest, Question};
 pub struct SubmitJob {
     pub from: Value,
     pub job: Value,
+    pub user: Option<String>,
     pub tag: Option<String>,
     pub verify: Value,
 }
@@ -95,6 +96,7 @@ impl Into<JobRequest> for JobTask {
         let q = JobRequest {
             id: id,
             job,
+            user: self.submit.user.unwrap_or_default(),
             tag: self.submit.tag.unwrap_or_default(),
             clock: json!({
                 "1": "1",

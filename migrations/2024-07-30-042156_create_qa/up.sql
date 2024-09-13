@@ -46,6 +46,7 @@ CREATE TABLE "answers"(
 
 CREATE TABLE "job_request"(
 	"id" VARCHAR NOT NULL PRIMARY KEY,
+	"user" VARCHAR NOT NULL,
 	"job" JSON NOT NULL,
 	"clock" JSON NOT NULL,
 	"job_type" VARCHAR NOT NULL,
@@ -59,6 +60,7 @@ CREATE TABLE "job_result"(
 	"job_id" VARCHAR NOT NULL,
 	"operator" VARCHAR NOT NULL,
 	"result" JSON NOT NULL,
+	"tag" VARCHAR NOT NULL,
 	"clock" JSON NOT NULL,
 	"signature" VARCHAR NOT NULL,
 	"job_type" VARCHAR NOT NULL,
@@ -74,5 +76,23 @@ CREATE TABLE "operator"(
 	"end" VARCHAR NOT NULL,
 	"operator_type" VARCHAR NOT NULL,
 	"status" VARCHAR NOT NULL,
+	"created_at" TIMESTAMP NOT NULL
+);
+
+CREATE TABLE "project"(
+	"id" VARCHAR NOT NULL PRIMARY KEY,
+	"name" VARCHAR NOT NULL,
+	"address" VARCHAR NOT NULL,
+	"status" VARCHAR NOT NULL,
+	"created_at" TIMESTAMP NOT NULL
+);
+
+
+CREATE TABLE "user"(
+	"id" VARCHAR NOT NULL PRIMARY KEY,
+	"name" VARCHAR NOT NULL,
+	"address" VARCHAR NOT NULL,
+	"status" VARCHAR NOT NULL,
+	"tag" VARCHAR NOT NULL,
 	"created_at" TIMESTAMP NOT NULL
 );

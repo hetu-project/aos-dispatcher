@@ -3,11 +3,11 @@ use diesel::upsert::excluded;
 use serde::Deserialize;
 use diesel::prelude::*;
 
-use crate::schema::{answers, job_request, job_result, operator};
+use crate::schema::{self, answers, job_request, job_result, operator};
 use crate::db::pg::model::{Question, Answer};
 use crate::schema::answers::dsl::{request_id as answer_request_id};
 
-use super::model::{JobRequest, JobResult, Operator};
+use super::model::{JobRequest, JobResult, Operator, User};
 
 
 pub fn serialize_naive_datetime<S>(
@@ -116,6 +116,7 @@ pub fn create_job_result(conn: &mut PgConnection, ans: &JobResult) -> Result<(),
 
 pub fn get_job_result_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Option<JobResult>, diesel::result::Error> {
   job_result::table
+      .select(JobResult::as_select())
       .filter(job_result::id.eq(q_id))
       .first::<JobResult>(conn)
       .optional()
@@ -123,6 +124,7 @@ pub fn get_job_result_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Optio
 
 pub fn get_job_results_by_job_id(conn: &mut PgConnection, q_id: &str) -> Result<Vec<JobResult>, diesel::result::Error> {
   job_result::table
+      .select(JobResult::as_select())
       .filter(job_result::job_id.eq(q_id))
       .load(conn)
 }
@@ -134,6 +136,17 @@ pub fn query_new_job_request(conn: &mut PgConnection) -> Result<Vec<JobRequest>,
     .select(JobRequest::as_select())
     .order(job_request::created_at.desc())
     .filter(job_request::status.eq_any(["", "created"]))
+    // .as_query()
+    .load(conn);
+  r
+}
+
+pub fn query_oldest_job_request_with_user(conn: &mut PgConnection, user: &str) -> Result<Vec<JobRequest>, diesel::result::Error> {
+  let r = job_request::table
+    .select(JobRequest::as_select())
+    .filter(job_request::id.eq(user))
+    .order(job_request::created_at.desc())
+    .limit(10)
     // .as_query()
     .load(conn);
   r
@@ -151,4 +164,31 @@ pub fn get_operator_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Operato
   operator::table
       .filter(operator::id.eq(q_id))
       .first::<Operator>(conn)
+}
+
+
+pub fn create_user(conn: &mut PgConnection, q: &User) -> Result<User, diesel::result::Error> {
+  diesel::insert_into(crate::schema::user::table)
+      .values(q)
+      .on_conflict(schema::user::id)
+      .do_update()
+      .set(schema::user::tag.eq(q.tag.clone()))
+      .returning(User::as_returning())
+      .get_result(conn)
+      // .expect("Error saving new question")
+}
+
+pub fn update_user(conn: &mut PgConnection, q: &User) -> Result<User, diesel::result::Error> {
+  diesel::update(crate::schema::user::table)
+      .filter(crate::schema::user::id.eq(q.id.clone()))
+      .set(crate::schema::user::tag.eq(q.tag.clone()))
+      .returning(User::as_returning())
+      .get_result(conn)
+}
+
+pub fn get_user_by_id(conn: &mut PgConnection, id: &str) -> Result<User, diesel::result::Error> {
+  schema::user::table
+      .select(User::as_select())
+      .filter(schema::user::id.eq(id))
+      .first::<User>(conn)
 }
