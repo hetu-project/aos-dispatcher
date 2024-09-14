@@ -1,22 +1,41 @@
+use anyhow::anyhow;
 use axum::extract::ws::Message;
 use serde_json::json;
 use tokio::sync::mpsc;
 
-use crate::{db::pg::{model::{Answer, JobResult}, util::{create_job_answer, create_job_result}}, server::server::SharedState};
+use crate::{db::pg::{model::{Answer, JobResult}, util::{create_job_answer, create_job_result}}, server::server::SharedState, ws::msg::WsResultMsg};
 
 use super::msg::{ConnectParams, JobResultParams, WsMethodMsg};
 
-pub fn convert_to_msg(msg: &str) -> Result<WsMethodMsg, ()> {
+pub async fn handle_command_msg(
+    msg: &String,
+    mut tx: mpsc::Sender<Message>,
+) -> anyhow::Result<()> {
+
+    let method_msg = convert_to_msg(msg)?;
+    tracing::debug!("receive {:#?}", &method_msg.method);
+    let method = method_msg.method.ok_or(anyhow!("the method is empty"))?;
+    tracing::debug!("Receive method msg {:#?}", method);
+    match method.as_str() {
+        "connect" => {
+
+        },
+        "job_result" => {
+
+        },
+        _ => {
+
+        }
+    }
+    Ok(())
+}
+
+pub fn convert_to_msg(msg: &str) -> anyhow::Result<WsMethodMsg> {
   let method_msg =
-      serde_json::from_str::<WsMethodMsg>(msg);
-  match method_msg {
-      Ok(m) => {
-          Ok(m)
-      }
-      Err(e) => {
-          Err(())
-      }
-  }
+      serde_json::from_str::<WsMethodMsg>(msg).map_err(|e|{
+        anyhow!("convert msg error {}", e)
+      });
+    method_msg
 }
 
 pub async fn connect_to_dispatcher(
@@ -59,12 +78,13 @@ pub async fn receive_job_result(
         tracing::debug!("job of operator id {} connect saved", p.operator);
         let mut server = server.0.write().await;
         let jr = JobResult {
-            id: format!("{}_{}", p.operator.clone(), p.job_id.clone()),
+            id: format!("{}_{}_{}", p.operator.clone(), p.job_id.clone(), p.tag.clone().unwrap_or_default()),
             job_id: p.job_id.clone(),
             operator: p.operator,
             result: p.result.into(),
             signature: "".into(),
             job_type: "".into(),
+            tag: p.tag.unwrap_or_default(),
             clock: json!({
                 "1": "2",
             }),

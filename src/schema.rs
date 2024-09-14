@@ -112,6 +112,8 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(job_result -> job_request (job_id));
+
 diesel::allow_tables_to_appear_in_same_query!(
     answers,
     job_request,

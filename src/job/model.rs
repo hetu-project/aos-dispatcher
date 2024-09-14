@@ -34,6 +34,17 @@ pub struct JobResultResp {
     pub result: Value,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobVerifyReq {
+    pub job_id: String,
+    pub user: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobVerifyResp {
+    pub code: u16,
+    pub result: Value,
+}
+
 
 pub struct JobTask {
     event: Event,

@@ -74,6 +74,7 @@ async fn main() {
         .route("/api/operator/info", post(operator::handler::operator_info))
         .route("/api/job/submit", post(job::handler::submit_job))
         .route("/api/job/result", post(job::handler::query_job_result))
+        .route("/api/job/verify", post(job::handler::query_job_result))
         // .route("/api/tee_callback", post(tee_callback))
         // .route("/api/opml_question", post(opml_question_handler))
         // .route("/api/opml_callback", post(opml_callback))

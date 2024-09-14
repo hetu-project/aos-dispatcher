@@ -64,6 +64,8 @@ pub struct ConnectParams {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobResultParams {
   pub job_id: String,
+  pub user: Option<String>,
+  pub tag: Option<String>,
   pub result: Value,
   pub operator: String,
   // pub hash: String,

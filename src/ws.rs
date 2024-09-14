@@ -11,7 +11,7 @@ use axum::extract::ws::CloseFrame;
 use msg::{WsMethodMsg, WsResultMsg, WsSendMsg};
 use serde_json::json;
 use tokio::sync::mpsc;
-use util::{connect_to_dispatcher, receive_job_result};
+use util::{connect_to_dispatcher, handle_command_msg, receive_job_result};
 // use futures::{sink::SinkExt, stream::StreamExt};
 use std::{borrow::Cow, net::ToSocketAddrs, sync::Arc};
 use std::ops::ControlFlow;
@@ -64,6 +64,16 @@ async fn handle_socket(
             if let Ok(msg) = msg {
               match &msg {
                   Message::Text(t) => {
+
+                    // TODO reactor for handle msg
+                    match handle_command_msg(&t, tx.clone()).await {
+                        Ok(_) => {
+                          tracing::debug!("handle msg success");
+                        },
+                        Err(err) => {
+                          tracing::error!("handle msg error {}", err);
+                        },
+                    };
                     let command = util::convert_to_msg(t);
                     if let Ok(method_msg) = command {
                       tracing::debug!("Receive method msg {:#?}", method_msg);

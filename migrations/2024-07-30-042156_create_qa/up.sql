@@ -57,7 +57,7 @@ CREATE TABLE "job_request"(
 
 CREATE TABLE "job_result"(
 	"id" VARCHAR NOT NULL PRIMARY KEY,
-	"job_id" VARCHAR NOT NULL,
+	"job_id" VARCHAR NOT NULL REFERENCES job_request(id),
 	"operator" VARCHAR NOT NULL,
 	"result" JSON NOT NULL,
 	"tag" VARCHAR NOT NULL,

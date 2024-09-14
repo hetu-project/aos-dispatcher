@@ -129,6 +129,14 @@ pub fn get_job_results_by_job_id(conn: &mut PgConnection, q_id: &str) -> Result<
       .load(conn)
 }
 
+pub fn get_job_verify_by_user_id(conn: &mut PgConnection, id: &str) -> Result<Vec<JobResult>, diesel::result::Error> {
+  job_result::table
+      .left_join(job_request::table)
+      .select(JobResult::as_select())
+      .filter(job_request::user.eq(id))
+      .load(conn)
+}
+
 
 
 pub fn query_new_job_request(conn: &mut PgConnection) -> Result<Vec<JobRequest>, diesel::result::Error> {
