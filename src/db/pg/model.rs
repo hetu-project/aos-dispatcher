@@ -86,7 +86,7 @@ pub struct Operator {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Queryable, Selectable, Insertable, Serialize)]
+#[derive(Queryable, Selectable, Insertable, Serialize, Clone)]
 #[diesel(table_name = crate::schema::job_request)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct JobRequest {

@@ -1,13 +1,25 @@
-use std::{str::FromStr, sync::Arc};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use anyhow::{anyhow, Context};
-use axum::extract::FromRef;
+use axum::extract::{ws::Message, FromRef};
 use nostr_sdk::EventId;
 use serde_json::json;
 use tokio::sync::{mpsc, RwLock};
 
 use crate::{
-    consts::{MALICIOUS, SUSPICION}, db::pg::{model::{JobRequest, User}, util::{self, create_user, get_user_by_id, query_new_job_request, query_oldest_job_request_with_user}}, opml::model::OpmlRequest, server::server::SharedState, service::nostr::{model::JobAnswer, util::query_question}, tee::model::{OperatorReq, Params}, ws::msg::{WsMethodMsg, WsResultMsg, WsSendMsg}
+    consts::{MALICIOUS, SUSPICION},
+    db::pg::{
+        model::{JobRequest, User},
+        util::{
+            self, create_user, get_user_by_id, query_new_job_request,
+            query_oldest_job_request_with_user,
+        },
+    },
+    opml::model::OpmlRequest,
+    server::server::SharedState,
+    service::nostr::{model::JobAnswer, util::query_question},
+    tee::model::{OperatorReq, Params},
+    ws::msg::{WsMethodMsg, WsResultMsg, WsSendMsg},
 };
 
 #[derive(Debug, Clone)]
@@ -26,86 +38,103 @@ pub struct DispatchTask {
     pub dispatch_task_tx: mpsc::Sender<u32>,
 }
 
+pub async fn dispatch_jobs_to_operators(
+    jobs: Vec<JobRequest>,
+    operators: &HashMap<String, mpsc::Sender<Message>>,
+    position: String,
+) {
+
+    for (_j, job) in jobs.iter().enumerate() {
+            for (k, tx) in operators {
+                tracing::debug!("dispatcher task to {}", k);
+                tracing::debug!("dispatcher task  question to {}", k);
+        
+                let uuid = uuid::Uuid::new_v4();
+                let id = uuid.to_string();
+                let msg = WsMethodMsg {
+                    id,
+                    address: "".into(),
+                    hash: "".into(),
+                    signature: "".into(),
+                    method: Some("dispatch_job".into()),
+                    params: json!([
+                        {
+                            "user": "",
+                            "seed": "",
+                            "tag": job.tag,
+                            "position": position,
+                            "signature": "",
+                            "clock": job.clock,
+                            "job_id": job.id,
+                            "job": job.job,
+                        }
+                    ]),
+                    result: None,
+                };
+                if let Err(e) = tx.send(msg.into()).await {
+                    tracing::error!("Send Message {}", e);
+                };
+        
+                // TODO create job result with status
+            }
+    }
+}
+
 pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
     let server = server.0.write().await;
+    let operators = server.operator_channels.iter();
+    if operators.len() == 0 {
+        return Ok(());
+    }
+
     let mut pool = server.pg.get()?;
     let jobs = query_new_job_request(&mut pool)?;
-    let job = jobs.iter().next().ok_or(anyhow!("there is no job to dispatch"))?;
+    let mut job = jobs
+        .iter()
+        .next()
+        .ok_or(anyhow!("there is no job to dispatch"))?.clone();
+
+    util::update_job_request_status(&mut pool, &job)
+        .context("update job status dispatched error")?;
+
+    let mut old_dispatch_jobs: Vec<JobRequest> = vec![];
 
     if job.tag.as_str() == MALICIOUS || job.tag.as_str() == SUSPICION {
-        let old_jobs: Vec<JobRequest> = query_oldest_job_request_with_user(&mut pool, job.user.as_str()).unwrap_or_default();
+        let old_jobs: Vec<JobRequest> =
+            query_oldest_job_request_with_user(&mut pool, job.user.as_str()).unwrap_or_default();
+        old_dispatch_jobs = old_jobs;
+        for oj in old_dispatch_jobs.iter_mut() {
+            oj.tag = job.tag.clone();
+        }
 
         let user = User {
             id: job.user.clone(),
             name: job.user.clone(),
             address: job.user.clone(),
             status: job.user.clone(),
-            tag: job.user.clone(),
+            tag: job.tag.clone(),
             created_at: chrono::Local::now().naive_local(),
         };
-
-        let user = create_user(&mut pool, &user).unwrap();
-
-        for (_n, job) in old_jobs.iter().enumerate() {
-            // dispatch old questions
-            // dispatch
-            tracing::debug!("dispatch old job {}", job.id);
-        }
-
+        let user = create_user(&mut pool, &user)?;
+        tracing::debug!("crate user: {}", user.id );
+        dispatch_jobs_to_operators(old_dispatch_jobs, &server.operator_channels, "before".into()).await;
     }
-    if let Ok(user) =  get_user_by_id(&mut pool, &job.user){
+    let mut position = "";
+    if let Ok(mut user) = get_user_by_id(&mut pool, &job.user) {
         if user.tag.as_str() == MALICIOUS || user.tag.as_str() == SUSPICION {
-            tracing::debug!("dispatch job {} with state {}", user.id, user.tag);
-
+            job.tag = user.tag.clone();
+            tracing::debug!("update the job to the tag {}", &job.tag);
             // todo is remove user tag
+
+            // update user
+            user.tag = "".into();
+            position = "after";
+            let user = create_user(&mut pool, &user)?;
+
+            tracing::debug!("update user: {}", user.id );
         }
     }
-
-    let operators = server.operator_channels.iter();
-
-    if operators.len() > 0 {
-        util::update_job_request_status(&mut pool, job).context("update job status dispatched error")?;
-    }
-
-
-    for (k, tx) in operators {
-            tracing::debug!("dispatcher task to {}", k);
-            tracing::debug!("dispatcher task  question to {}", k);
-
-            let uuid = uuid::Uuid::new_v4();
-            let id = uuid.to_string();
-            let msg = WsMethodMsg {
-                id,
-                address: "".into(),
-                hash: "".into(),
-                signature: "".into(),
-                method: Some("dispatch_job".into()),
-                params: json!([
-                    {
-                        "user": "", 
-                        "seed": "",
-                        "tag": job.tag,
-                        "position": "",
-                        "signature": "",
-                        "clock": job.clock,
-                        "job_id": job.id,
-                        "job": job.job,
-                    }
-                ]),
-                result: None,
-            };
-            if let Err(e) = tx.send(msg.into()).await {
-                tracing::error!("Send Message {}", e);
-            };
-
-            // TODO create job result with status
-        
-        
-    }
-
-
-
-
+    dispatch_jobs_to_operators(vec![job.clone()], &server.operator_channels, position.into()).await;
     Ok(())
 }
 
@@ -115,11 +144,10 @@ pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
         match dispatch_job(server.clone()).await {
             Ok(_) => {
                 tracing::debug!("dispatch job success");
-            },
+            }
             Err(err) => {
                 tracing::error!("dispatch job success, {}", err);
-
-            },
+            }
         };
     }
 }
