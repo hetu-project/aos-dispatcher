@@ -1,4 +1,3 @@
-
 use nostr_sdk::EventId;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]

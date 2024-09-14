@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OperatorRegisterParams {
     pub operator: String,
@@ -22,7 +20,6 @@ pub struct OperatorRegisterResp {
     pub message: Value,
     pub result: Value,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OperatorInfoReq {

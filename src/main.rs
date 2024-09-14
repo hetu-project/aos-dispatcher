@@ -45,8 +45,7 @@ async fn main() {
 
     let _secret_key = config.secret_key;
 
-    let server =
-        SharedState::new(config, dispatch_task_tx.clone(), job_status_tx.clone()).await;
+    let server = SharedState::new(config, dispatch_task_tx.clone(), job_status_tx.clone()).await;
 
     // let nostr_sub_task = tokio::spawn(aos_dispatcher::service::nostr::subscription_service(
     //     server.clone(),
@@ -98,11 +97,12 @@ async fn main() {
                     listener,
                     app.into_make_service_with_connect_info::<SocketAddr>(),
                 )
-                .await {
-                    Ok(_) => {},
+                .await
+                {
+                    Ok(_) => {}
                     Err(e) => {
                         tracing::error!("start server error: {}", e);
-                    },
+                    }
                 }
             }
             Err(e) => {
@@ -112,8 +112,8 @@ async fn main() {
     });
 
     let _ = tokio::join!(
-        // nostr_sub_task, 
-        server_task, 
+        // nostr_sub_task,
+        server_task,
         dispatch_task,
     );
 }

@@ -1,19 +1,19 @@
-use std::collections::HashMap;
-use std::env;
-use std::sync::Arc;
 use axum::extract::ws::Message;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
-use tokio::sync::{mpsc, RwLock};
-use rand::rngs::OsRng;
-use ed25519_dalek::{SecretKey, Signature, Signer, SigningKey};
-use reqwest::Client;
 use dotenvy::dotenv;
+use ed25519_dalek::{SecretKey, Signature, Signer, SigningKey};
+use rand::rngs::OsRng;
+use reqwest::Client;
+use std::collections::HashMap;
+use std::env;
+use std::sync::Arc;
+use tokio::sync::{mpsc, RwLock};
 
 use crate::config::Config;
-use crate::service::nostr::model::JobAnswer;
-use crate::tee::model::{Operator, OperatorReq, WorkerStatus, OperatorResp, AnswerReq};
 use crate::opml::model::{OpmlAnswer, OpmlRequest};
+use crate::service::nostr::model::JobAnswer;
+use crate::tee::model::{AnswerReq, Operator, OperatorReq, OperatorResp, WorkerStatus};
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -34,7 +34,9 @@ pub struct Server {
 pub struct SharedState(pub(crate) Arc<RwLock<Server>>);
 
 impl SharedState {
-    pub async fn new(config: Config, dispatch_task_tx: mpsc::Sender<u32>,
+    pub async fn new(
+        config: Config,
+        dispatch_task_tx: mpsc::Sender<u32>,
         job_status_tx: mpsc::Sender<JobAnswer>,
     ) -> Self {
         let server = Server::new(config, dispatch_task_tx, job_status_tx).await;
@@ -43,7 +45,9 @@ impl SharedState {
 }
 
 impl Server {
-    pub async fn new(config: Config, dispatch_task_tx: mpsc::Sender<u32>,
+    pub async fn new(
+        config: Config,
+        dispatch_task_tx: mpsc::Sender<u32>,
         job_status_tx: mpsc::Sender<JobAnswer>,
     ) -> Self {
         // let mut csprng = OsRng;
@@ -55,7 +59,9 @@ impl Server {
 
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         let manager = ConnectionManager::<PgConnection>::new(database_url);
-        let pg = Pool::builder().build(manager).expect("Failed to create pool.");
+        let pg = Pool::builder()
+            .build(manager)
+            .expect("Failed to create pool.");
 
         Self {
             config,
@@ -80,7 +86,13 @@ impl Server {
         self.sign_key.verify(message, signature).is_ok()
     }
 
-    pub fn add_worker(&mut self, worker_name: String, check_heart_beat: bool, worker_status: WorkerStatus, multimodal: bool) {
+    pub fn add_worker(
+        &mut self,
+        worker_name: String,
+        check_heart_beat: bool,
+        worker_status: WorkerStatus,
+        multimodal: bool,
+    ) {
         let worker_name_clone = worker_name.clone();
         let operator = Operator {
             worker_name: worker_name_clone,
@@ -91,30 +103,28 @@ impl Server {
         self.tee_operator_collections.insert(worker_name, operator);
     }
 
-    pub async fn send_tee_inductive_task(&self, worker_name: String, req: OperatorReq) -> OperatorResp {
+    pub async fn send_tee_inductive_task(
+        &self,
+        worker_name: String,
+        req: OperatorReq,
+    ) -> OperatorResp {
         let operator = self.tee_operator_collections.get(&worker_name).unwrap();
         let op_url = format!("{}/api/v1/question", operator.worker_name);
         //let client = Client::builder().proxy(reqwest::Proxy::http("http://127.0.0.1:8080")?).build().unwrap();
-        let resp = Client::new()
-            .post(op_url)
-            .json(&req)
-            .send()
-            .await
-            .unwrap();
+        let resp = Client::new().post(op_url).json(&req).send().await.unwrap();
 
         resp.json::<OperatorResp>().await.unwrap()
     }
 
-    pub async fn send_opml_request(&self, req: OpmlRequest) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn send_opml_request(
+        &self,
+        req: OpmlRequest,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Sending opml request {:?}", req);
         let client = reqwest::Client::new();
         let opml_server_url = format!("{}/api/v1/question", "http://127.0.0.1:1234");
 
-        let response = client
-            .post(opml_server_url)
-            .json(&req)
-            .send()
-            .await?;
+        let response = client.post(opml_server_url).json(&req).send().await?;
 
         if response.status().is_success() {
             Ok(())

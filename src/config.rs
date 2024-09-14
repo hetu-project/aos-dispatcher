@@ -10,7 +10,6 @@ pub struct CustomRegister {
     pub account: Option<String>,
 }
 
-
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct CustomServer {
     pub host: Option<String>,
@@ -59,14 +58,14 @@ impl CustomConfig {
                     Err(_) => {
                         tracing::error!("parse dispatcher.toml fail");
                         CustomConfig::default()
-                    },
+                    }
                 };
                 custom_config
-            },
+            }
             Err(_) => {
                 tracing::error!("parse dispatcher.toml fail");
                 CustomConfig::default()
-            },
+            }
         };
         custom
     }
@@ -106,16 +105,18 @@ impl Config {
         }
     }
 
-    pub  fn merge(&mut self, custom: &CustomConfig) -> Self {
+    pub fn merge(&mut self, custom: &CustomConfig) -> Self {
         let mut config = Self::new();
         config.server.host = custom.address.clone().unwrap_or(config.server.host);
         config.server.port = custom.port.unwrap_or(config.server.port);
-        config.secret_key = custom.mnemonic.clone().map_or(config.secret_key, |mnemonic| {
-            let pair = Keys::from_mnemonic(mnemonic, None).unwrap();
-            pair.secret_key().unwrap().secret_bytes()
-        });
+        config.secret_key = custom
+            .mnemonic
+            .clone()
+            .map_or(config.secret_key, |mnemonic| {
+                let pair = Keys::from_mnemonic(mnemonic, None).unwrap();
+                pair.secret_key().unwrap().secret_bytes()
+            });
         config.custom_config = custom.clone();
         config
     }
-
 }

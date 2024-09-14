@@ -6,8 +6,6 @@ use serde_json::{json, Value};
 
 use crate::db::pg::model::{JobRequest, Question};
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmitJob {
     pub from: Value,
@@ -22,7 +20,6 @@ pub struct SubmitJobResp {
     pub code: u16,
     pub result: String,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobResultReq {
@@ -45,7 +42,6 @@ pub struct JobVerifyResp {
     pub result: Value,
 }
 
-
 pub struct JobTask {
     event: Event,
     job: Value,
@@ -54,17 +50,27 @@ pub struct JobTask {
 
 impl JobTask {
     pub fn create_with(req: &SubmitJob, keys: &Keys) -> Self {
-        let input_tag = Tag::custom(nostr_sdk::TagKind::SingleLetter(SingleLetterTag::lowercase(nostr_sdk::Alphabet::I)), vec!["input"]);
-        let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
-        let timestamp_tag = Tag::custom(nostr_sdk::TagKind::Custom("create_at".into()), vec![time.to_string()]);
+        let input_tag = Tag::custom(
+            nostr_sdk::TagKind::SingleLetter(SingleLetterTag::lowercase(nostr_sdk::Alphabet::I)),
+            vec!["input"],
+        );
+        let time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let timestamp_tag = Tag::custom(
+            nostr_sdk::TagKind::Custom("create_at".into()),
+            vec![time.to_string()],
+        );
         let tags = vec![input_tag, timestamp_tag];
-        let event_builder = EventBuilder::job_request(nostr_sdk::Kind::JobRequest(5050), tags).unwrap();
+        let event_builder =
+            EventBuilder::job_request(nostr_sdk::Kind::JobRequest(5050), tags).unwrap();
         let event = event_builder.to_event(keys).unwrap();
         let job = req.job.clone();
         // let job = json!({
 
         // });
-        Self{
+        Self {
             event,
             job,
             submit: req.clone(),
@@ -82,7 +88,7 @@ impl Into<Question> for JobTask {
         let callback_url = "".into();
         let status = "".into();
         let job_type = "".into();
- 
+
         let q = Question {
             request_id: id,
             message: message,

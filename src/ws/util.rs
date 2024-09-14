@@ -3,38 +3,29 @@ use axum::extract::ws::Message;
 use serde_json::json;
 use tokio::sync::mpsc;
 
-use crate::{db::pg::{model::JobResult, util::create_job_result}, server::server::SharedState};
+use crate::{
+    db::pg::{model::JobResult, util::create_job_result},
+    server::server::SharedState,
+};
 
 use super::msg::{ConnectParams, JobResultParams, WsMethodMsg};
 
-pub async fn handle_command_msg(
-    msg: &String,
-    _tx: mpsc::Sender<Message>,
-) -> anyhow::Result<()> {
-
+pub async fn handle_command_msg(msg: &String, _tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
     let method_msg = convert_to_msg(msg)?;
     tracing::debug!("receive {:#?}", &method_msg.method);
     let method = method_msg.method.ok_or(anyhow!("the method is empty"))?;
     tracing::debug!("Receive method msg {:#?}", method);
     match method.as_str() {
-        "connect" => {
-
-        },
-        "job_result" => {
-
-        },
-        _ => {
-
-        }
+        "connect" => {}
+        "job_result" => {}
+        _ => {}
     }
     Ok(())
 }
 
 pub fn convert_to_msg(msg: &str) -> anyhow::Result<WsMethodMsg> {
-  let method_msg =
-      serde_json::from_str::<WsMethodMsg>(msg).map_err(|e|{
-        anyhow!("convert msg error {}", e)
-      });
+    let method_msg =
+        serde_json::from_str::<WsMethodMsg>(msg).map_err(|e| anyhow!("convert msg error {}", e));
     method_msg
 }
 
@@ -42,12 +33,12 @@ pub async fn connect_to_dispatcher(
     msg: &WsMethodMsg,
     tx: mpsc::Sender<Message>,
     server: SharedState,
-) -> Result<String, ()>{
+) -> Result<String, ()> {
     let operator = msg.params.as_array().and_then(|p| {
         let a = p.get(0);
         if let Some(s) = a {
             let p = serde_json::from_value::<ConnectParams>(s.clone()).ok();
-            return  p
+            return p;
         }
         None
     });
@@ -64,13 +55,13 @@ pub async fn receive_job_result(
     msg: &WsMethodMsg,
     _tx: mpsc::Sender<Message>,
     server: SharedState,
-) -> Result<(), ()>{
+) -> Result<(), ()> {
     tracing::debug!("receive job result");
     let result = msg.params.as_array().and_then(|p| {
         let a = p.get(0);
         if let Some(s) = a {
             let p = serde_json::from_value::<JobResultParams>(s.clone()).ok();
-            return  p
+            return p;
         }
         None
     });
@@ -78,7 +69,12 @@ pub async fn receive_job_result(
         tracing::debug!("job of operator id {} connect saved", p.operator);
         let server = server.0.write().await;
         let jr = JobResult {
-            id: format!("{}_{}_{}", p.operator.clone(), p.job_id.clone(), p.tag.clone().unwrap_or_default()),
+            id: format!(
+                "{}_{}_{}",
+                p.operator.clone(),
+                p.job_id.clone(),
+                p.tag.clone().unwrap_or_default()
+            ),
             job_id: p.job_id.clone(),
             operator: p.operator,
             result: p.result.into(),
@@ -90,11 +86,14 @@ pub async fn receive_job_result(
             }),
             created_at: chrono::Local::now().naive_local(),
         };
-        let mut conn = server.pg.get().expect("Failed to get a connection from pool");
+        let mut conn = server
+            .pg
+            .get()
+            .expect("Failed to get a connection from pool");
 
         let _ = create_job_result(&mut conn, &jr);
-    }else {
-         tracing::error!("there is no job result");
+    } else {
+        tracing::error!("there is no job result");
     }
     Ok(())
 }
