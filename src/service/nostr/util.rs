@@ -16,7 +16,7 @@ impl  AosTask {
 
       if event.kind() == Kind::JobRequest(5050) {
 
-                  let model_tag = event.tags.iter().find(|t| { 
+        let _model_tag = event.tags.iter().find(|t| { 
             if t.kind() != TagKind::Custom("param".into()) {
               return  false;
             }

@@ -1,24 +1,18 @@
 use axum::{
   extract::{ws::{Message, WebSocket, WebSocketUpgrade}, State},
-  response::{IntoResponse, Response},
-  routing::get,
-  Router,
+  response::Response,
 };
 // use axum_extra::TypedHeader;
 
 use axum::extract::connect_info::ConnectInfo;
-use axum::extract::ws::CloseFrame;
-use msg::{WsMethodMsg, WsResultMsg, WsSendMsg};
+use msg::WsResultMsg;
 use serde_json::json;
 use tokio::sync::mpsc;
 use util::{connect_to_dispatcher, handle_command_msg, receive_job_result};
 // use futures::{sink::SinkExt, stream::StreamExt};
-use std::{borrow::Cow, net::ToSocketAddrs, sync::Arc};
-use std::ops::ControlFlow;
-use std::{net::SocketAddr, path::PathBuf};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use std::net::SocketAddr;
 
-use crate::{server::server::SharedState, service::task::DispatchTaskState};
+use crate::server::server::SharedState;
 
 pub mod msg;
 pub mod util;
@@ -33,7 +27,7 @@ pub async fn handler(
 
   // send client channel
 
-  let (tx, mut rx) = mpsc::channel::<Message>(20_000);
+  let (tx, rx) = mpsc::channel::<Message>(20_000);
   let dispatch_tx;
 
 
@@ -50,9 +44,9 @@ pub async fn handler(
 async fn handle_socket(
   mut socket: WebSocket, 
   who: SocketAddr,
-  mut tx: mpsc::Sender<Message>,
+  tx: mpsc::Sender<Message>,
   mut rx: mpsc::Receiver<Message>,
-  dispatch_tx:mpsc::Sender<u32>,
+  _dispatch_tx:mpsc::Sender<u32>,
   server: SharedState,
 ) {
   tracing::info!("{} ws connect", who);
@@ -142,7 +136,7 @@ async fn handle_socket(
                        }
 
                        if let &Some(_) = &method_msg.result  {
-                        let result = WsResultMsg {
+                        let _result = WsResultMsg {
                           id: method_msg.id.clone(),
                           result: "".into(),
                           address: "".into(),

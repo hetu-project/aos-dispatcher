@@ -1,17 +1,7 @@
-use std::collections::HashMap;
 use chrono::NaiveDateTime;
-use diesel::associations::HasTable;
-use diesel::sql_types::Json;
 use serde::{Deserialize, Serialize};
 use diesel::prelude::*;
-use reqwest::{Client, Url};
 use serde_json::Value;
-use std::time::Duration;
-use crate::schema::answers::dsl::*;
-use crate::schema::questions;
-use crate::schema::answers;
-use crate::schema::questions::dsl::{request_id, questions as questions_table};
-use crate::schema::answers::dsl::{request_id as answer_request_id};
 
 pub fn serialize_naive_datetime<S>(
   date: &NaiveDateTime,

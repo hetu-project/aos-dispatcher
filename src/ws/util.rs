@@ -3,13 +3,13 @@ use axum::extract::ws::Message;
 use serde_json::json;
 use tokio::sync::mpsc;
 
-use crate::{db::pg::{model::{Answer, JobResult}, util::{create_job_answer, create_job_result}}, server::server::SharedState, ws::msg::WsResultMsg};
+use crate::{db::pg::{model::JobResult, util::create_job_result}, server::server::SharedState};
 
 use super::msg::{ConnectParams, JobResultParams, WsMethodMsg};
 
 pub async fn handle_command_msg(
     msg: &String,
-    mut tx: mpsc::Sender<Message>,
+    _tx: mpsc::Sender<Message>,
 ) -> anyhow::Result<()> {
 
     let method_msg = convert_to_msg(msg)?;
@@ -40,7 +40,7 @@ pub fn convert_to_msg(msg: &str) -> anyhow::Result<WsMethodMsg> {
 
 pub async fn connect_to_dispatcher(
     msg: &WsMethodMsg,
-    mut tx: mpsc::Sender<Message>,
+    tx: mpsc::Sender<Message>,
     server: SharedState,
 ) -> Result<String, ()>{
     let operator = msg.params.as_array().and_then(|p| {
@@ -62,7 +62,7 @@ pub async fn connect_to_dispatcher(
 
 pub async fn receive_job_result(
     msg: &WsMethodMsg,
-    mut tx: mpsc::Sender<Message>,
+    _tx: mpsc::Sender<Message>,
     server: SharedState,
 ) -> Result<(), ()>{
     tracing::debug!("receive job result");
@@ -76,7 +76,7 @@ pub async fn receive_job_result(
     });
     if let Some(p) = result {
         tracing::debug!("job of operator id {} connect saved", p.operator);
-        let mut server = server.0.write().await;
+        let server = server.0.write().await;
         let jr = JobResult {
             id: format!("{}_{}_{}", p.operator.clone(), p.job_id.clone(), p.tag.clone().unwrap_or_default()),
             job_id: p.job_id.clone(),

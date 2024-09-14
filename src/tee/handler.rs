@@ -1,21 +1,18 @@
 use std::borrow::Cow;
 use std::str::FromStr;
-use axum::{BoxError, debug_handler, extract, Json};
+use axum::{BoxError, debug_handler, Json};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use diesel::{Insertable, Queryable, RunQueryDsl, Selectable};
 use nostr_sdk::EventId;
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use uuid::uuid;
 use crate::service::nostr::model::JobAnswer;
 use crate::tee::model::*;
 use crate::server::server::SharedState;
 use crate::tee::model::list_questions;
 use serde_json::json;
 use tokio::sync::mpsc;
-use tokio::time::{Duration, Instant};
+use tokio::time::Duration;
 
 
 #[debug_handler]
@@ -43,7 +40,7 @@ pub async fn tee_question_handler(State(server): State<SharedState>, req: Json<Q
     let uuid = uuid::Uuid::new_v4();
     let request_id = uuid.to_string();
     {
-        let mut server = server.0.write().await;
+        let server = server.0.write().await;
 
         let mut conn = server.pg.get().expect("Failed to get a connection from pool");
         let q = create_question(&mut conn, request_id.clone(), req.message.clone(), req.message_id.clone(), req.conversation_id.clone(), req.model.clone(), req.callback_url.clone()).expect("Error saving new question");
@@ -111,7 +108,7 @@ pub async fn register_worker(State(server): State<SharedState>, Json(req): Json<
 #[debug_handler]
 pub async fn receive_heart_beat(State(server): State<SharedState>, Json(req): Json<HeartBeatReq>) -> Json<HeartBeatResp> {
     tracing::info!("Receiving heart beat {:?}", req);
-    let mut server = server.0.write().await;
+    let server = server.0.write().await;
     let exist = server.tee_operator_collections.contains_key(&req.worker_name);
     let response = HeartBeatResp {
         exist,

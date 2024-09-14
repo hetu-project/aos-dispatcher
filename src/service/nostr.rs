@@ -1,24 +1,18 @@
-const MNEMONIC_PHRASE: &str = "equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot";
-const DEFAULT_RELAY: &str = "ws://localhost:7010";
-
 use model::JobAnswer;
-use nostr::nips::nip06::FromMnemonic;
 use nostr::nips::nip19::ToBech32;
-use nostr::{Keys, Result};
+use nostr::Keys;
 
-use nostr_sdk::{Client, Event, EventBuilder, EventId, Filter, Kind, Metadata, RelayPoolNotification, SecretKey, SingleLetterTag, Tag, TagKind, Timestamp, Url};
+use nostr_sdk::{Client, EventBuilder, Filter, Kind, RelayPoolNotification, SecretKey, Timestamp};
 use tokio::sync::mpsc;
-use tracing::instrument::WithSubscriber;
 
-use crate::opml::model::{create_opml_question, OpmlRequest};
 use crate::server::server::SharedState;
-use crate::tee::model::{create_question, query_latest_question, OperatorReq};
+use crate::tee::model::{create_question, query_latest_question};
 pub mod util;
 pub mod model;
 pub async fn subscription_service(
   server: SharedState,
   mut job_status_rx: mpsc::Receiver<JobAnswer>,
-  mut dispatch_task_tx: mpsc::Sender<u32>,
+  dispatch_task_tx: mpsc::Sender<u32>,
   key: ed25519_dalek::SecretKey,
   relay_url: String,
 ){
@@ -33,10 +27,10 @@ pub async fn subscription_service(
   client.add_relay(&relay_url).await.unwrap();
   client.connect().await;
   tracing::info!("connect relay {:#?} with {:#?}", &relay_url, bech32_address);
-  let metadata = Metadata::new()
-  .name("aos-dispatcher")
-  .display_name("Aos Dispatcher")
-  .website(Url::parse("https://github.com/hetu-project/aos-dispatcher").unwrap());
+  // let metadata = Metadata::new()
+  // .name("aos-dispatcher")
+  // .display_name("Aos Dispatcher")
+  // .website(Url::parse("https://github.com/hetu-project/aos-dispatcher").unwrap());
 
   let submit_client = client.clone();
   let job_status_submit = tokio::spawn(async move {
@@ -81,7 +75,7 @@ pub async fn subscription_service(
   ;
 
   {
-    let mut server = server.0.write().await;
+    let server = server.0.write().await;
     let mut conn = server.pg.get().expect("Failed to get a connection from pool");
 
     if let Ok(latest_question) = query_latest_question(&mut conn) {
@@ -118,7 +112,7 @@ pub async fn subscription_service(
 
         {
 
-          let mut server = server.0.write().await;
+          let server = server.0.write().await;
           let mut conn = server.pg.get().expect("Failed to get a connection from pool");
           let message = aos_task.prompt.unwrap_or_default();
           let message_id = event.id().to_string();

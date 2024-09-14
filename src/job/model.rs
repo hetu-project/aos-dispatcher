@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use nostr_sdk::{Event, EventBuilder, Keys, SingleLetterTag, Tag, Timestamp};
+use nostr_sdk::{Event, EventBuilder, Keys, SingleLetterTag, Tag};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 

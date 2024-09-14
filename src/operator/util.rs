@@ -38,7 +38,7 @@ pub async fn register_operator(op: &Operator, start: u32, end: u32, config: &Cus
   let wallet = EthereumWallet::from(singer);
   // wallet.default_signer().address();
   let owner_address = wallet.default_signer().address();
-  tracing::info!("Wallet: {}", wallet.default_signer().address());
+  tracing::info!("Wallet: {}", owner_address);
   let provider = ProviderBuilder::new()
     .with_recommended_fillers()
     .network::<AnyNetwork>()
@@ -50,7 +50,7 @@ pub async fn register_operator(op: &Operator, start: u32, end: u32, config: &Cus
   let contract_addr = Address::from_str(&contract_address)?;
 
   // Create a contract instance.
-  let mut contract = VRFRange::new(contract_addr, provider);
+  let contract = VRFRange::new(contract_addr, provider);
 
   let total_operators = contract.getNumOperators().call().await?._0;
 

@@ -1,10 +1,9 @@
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Context};
 use axum::extract::{ws::Message, FromRef};
-use nostr_sdk::EventId;
 use serde_json::json;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{mpsc};
 
 use crate::{
     consts::{MALICIOUS, SUSPICION},
@@ -15,23 +14,9 @@ use crate::{
             query_oldest_job_request_with_user,
         },
     },
-    opml::model::OpmlRequest,
     server::server::SharedState,
-    service::nostr::{model::JobAnswer, util::query_question},
-    tee::model::{OperatorReq, Params},
-    ws::msg::{WsMethodMsg, WsResultMsg, WsSendMsg},
+    ws::msg::WsMethodMsg,
 };
-
-#[derive(Debug, Clone)]
-pub struct DispatchTaskState(pub(crate) Arc<RwLock<DispatchTask>>);
-
-impl DispatchTaskState {
-    pub fn new(tx: mpsc::Sender<u32>) -> Self {
-        Self(Arc::new(RwLock::new(DispatchTask {
-            dispatch_task_tx: tx,
-        })))
-    }
-}
 
 #[derive(Debug, Clone, FromRef)]
 pub struct DispatchTask {
@@ -97,12 +82,11 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
     util::update_job_request_status(&mut pool, &job)
         .context("update job status dispatched error")?;
 
-    let mut old_dispatch_jobs: Vec<JobRequest> = vec![];
-
     if job.tag.as_str() == MALICIOUS || job.tag.as_str() == SUSPICION {
-        let old_jobs: Vec<JobRequest> =
+        // let mut old_dispatch_jobs: Vec<JobRequest> = vec![];
+        let mut old_dispatch_jobs: Vec<JobRequest> =
             query_oldest_job_request_with_user(&mut pool, job.user.as_str()).unwrap_or_default();
-        old_dispatch_jobs = old_jobs;
+        // old_dispatch_jobs = old_jobs;
         for oj in old_dispatch_jobs.iter_mut() {
             oj.tag = job.tag.clone();
         }

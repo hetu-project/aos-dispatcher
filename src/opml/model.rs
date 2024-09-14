@@ -1,8 +1,6 @@
-use diesel::query_builder::AsQuery;
 use serde::{Deserialize, Serialize};
-use chrono::{NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use diesel::{Insertable, PgConnection, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
-use diesel::associations::HasTable;
 use crate::schema::opml_questions;
 use crate::tee::model::{deserialize_naive_datetime, serialize_naive_datetime};
 

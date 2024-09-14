@@ -1,16 +1,14 @@
-use axum::{BoxError, debug_handler, extract, Json};
+use axum::{debug_handler, Json};
 use axum::extract::State;
-use rand::{random, Rng};
-use serde::{Deserialize, Serialize};
+use rand::Rng;
 
 use crate::db::pg::model::Operator;
-use crate::db::pg::util::{create_operator, get_operator_by_id, query_operators};
+use crate::db::pg::util::{create_operator, get_operator_by_id};
 use crate::operator::util::register_operator;
 use crate::server::server::SharedState;
 use serde_json::json;
-use crate::db::pg;
 
-use crate::operator::model::{OperatorInfoReq, OperatorRegisterReq, OperatorRegisterResp};
+use crate::operator::model::{OperatorInfoReq, OperatorRegisterReq};
 
 pub fn sample_range_of_operators(ops: &mut Vec<Operator>) {
   let count = ops.len();
@@ -26,7 +24,7 @@ pub fn sample_range_of_operators(ops: &mut Vec<Operator>) {
   }
 }
 
-pub fn sample_range_of_operator(ops: &Operator, min: u32, max: u32, count: u32) -> (u32, u32) {
+pub fn sample_range_of_operator(_ops: &Operator, min: u32, max: u32, count: u32) -> (u32, u32) {
   let range_max = max;
   let range_min = min;
   let diff = range_max - range_min;
@@ -51,8 +49,8 @@ pub async fn register(State(server): State<SharedState>, Json(req): Json<Operato
     status: "".into(), 
     created_at: chrono::Local::now().naive_local(), 
   };
-  let mut server = server.0.write().await;
-  let keys = &server.nostr_keys;
+  let server = server.0.write().await;
+  let _keys = &server.nostr_keys;
   let mut conn = server.pg.get().expect("Failed to get a connection from pool");
   let sample_range = sample_range_of_operator(&operator, 0, 6000, 10);
   operator.start = sample_range.0.to_string();
@@ -86,7 +84,7 @@ pub async fn register(State(server): State<SharedState>, Json(req): Json<Operato
 pub async fn operator_info(State(server): State<SharedState>, Json(req): Json<OperatorInfoReq>) -> Json<serde_json::Value> {
   tracing::debug!("operator info");
   let operator_id = req.operator;
-  let mut server = server.0.write().await;
+  let server = server.0.write().await;
   // let keys = &server.nostr_keys;
   let mut conn = server.pg.get().expect("Failed to get a connection from pool");
   let operator = get_operator_by_id(&mut conn, &operator_id).ok();

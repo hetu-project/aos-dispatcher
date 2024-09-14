@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use chrono::NaiveDateTime;
-use diesel::associations::HasTable;
 use serde::{Deserialize, Serialize};
 use diesel::prelude::*;
 use reqwest::{Client, Url};

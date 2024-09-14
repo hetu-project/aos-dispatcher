@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::env;
 use std::sync::Arc;
-use axum::extract::ws::{Message, WebSocket};
+use axum::extract::ws::Message;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
-use nostr::nips::nip06::FromMnemonic;
-use tokio::sync::{mpsc, oneshot, RwLock};
+use tokio::sync::{mpsc, RwLock};
 use rand::rngs::OsRng;
 use ed25519_dalek::{SecretKey, Signature, Signer, SigningKey};
 use reqwest::Client;
@@ -13,7 +12,7 @@ use dotenvy::dotenv;
 
 use crate::config::Config;
 use crate::service::nostr::model::JobAnswer;
-use crate::tee::model::{Operator, Params, OperatorReq, WorkerStatus, OperatorResp, AnswerReq};
+use crate::tee::model::{Operator, OperatorReq, WorkerStatus, OperatorResp, AnswerReq};
 use crate::opml::model::{OpmlAnswer, OpmlRequest};
 
 #[derive(Debug, Clone)]

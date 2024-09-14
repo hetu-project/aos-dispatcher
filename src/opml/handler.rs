@@ -1,17 +1,11 @@
 use axum::{debug_handler, extract::State, Json};
 use nostr_sdk::EventId;
 use crate::service::nostr::model::JobAnswer;
-use crate::tee::model::{Answer, AnswerResp, QuestionReq};
+use crate::tee::model::QuestionReq;
 use crate::server::server::SharedState;
-use uuid::Uuid;
-use chrono::Utc;
-use diesel::associations::HasTable;
 use diesel::{PgConnection, RunQueryDsl};
 use crate::opml::model::*;
-use crate::schema::opml_answers::dsl::opml_answers;
-use tokio::time::{timeout, Duration};
 use std::str::FromStr;
-use std::time::Duration as StdDuration;
 use tokio::sync::mpsc;
 
 
@@ -25,7 +19,7 @@ pub async fn opml_question_handler(State(server): State<SharedState>, Json(req):
             req_id: req.message_id.clone(),
             callback: req.callback_url.clone(),
         };
-        let mut server = server.0.write().await;
+        let server = server.0.write().await;
         let mut conn = server.pg.get().expect("Failed to get a connection from pool");
 
         // Store the question in the database
@@ -93,7 +87,7 @@ pub async fn opml_question_handler(State(server): State<SharedState>, Json(req):
 pub async fn opml_callback(State(server): State<SharedState>, Json(req): Json<OpmlAnswer>) -> Json<OpmlAnswerResponse> {
     tracing::info!("Handling OPML answer: {:?}", req);
 
-    let mut server = server.0.write().await;
+    let server = server.0.write().await;
     let mut conn = server.pg.get().expect("Failed to get a connection from pool");
     if let Some(job_status_tx) = server.job_status_tx.clone() {
         job_status_tx.send(JobAnswer {
