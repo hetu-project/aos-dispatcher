@@ -41,7 +41,7 @@ pub async fn dispatch_jobs_to_operators(
                 hash: "".into(),
                 signature: "".into(),
                 method: Some("dispatch_job".into()),
-                params: json!([
+                params: Some(json!([
                     {
                         "user": "",
                         "seed": "",
@@ -52,7 +52,7 @@ pub async fn dispatch_jobs_to_operators(
                         "job_id": job.id,
                         "job": job.job,
                     }
-                ]),
+                ])),
                 result: None,
             };
             if let Err(e) = tx.send(msg.into()).await {

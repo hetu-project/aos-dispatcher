@@ -59,6 +59,9 @@ async fn handle_socket(
                 match &msg {
                     Message::Text(t) => {
 
+                      tracing::debug!("receive text message success {}", t);
+
+
                       // TODO reactor for handle msg
                       match handle_command_msg(&t, tx.clone()).await {
                           Ok(_) => {

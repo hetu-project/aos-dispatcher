@@ -34,13 +34,15 @@ pub async fn connect_to_dispatcher(
     tx: mpsc::Sender<Message>,
     server: SharedState,
 ) -> Result<String, ()> {
-    let operator = msg.params.as_array().and_then(|p| {
-        let a = p.get(0);
-        if let Some(s) = a {
-            let p = serde_json::from_value::<ConnectParams>(s.clone()).ok();
-            return p;
-        }
-        None
+    let operator = msg.params.clone().and_then(|p| {
+        p.as_array().and_then(|v| {
+            let a = v.get(0);
+            if let Some(s) = a {
+                let p = serde_json::from_value::<ConnectParams>(s.clone()).ok();
+                return p;
+            }
+            None
+        })
     });
     if let Some(p) = operator {
         tracing::debug!("operator id {} connect", p.operator);
@@ -57,13 +59,16 @@ pub async fn receive_job_result(
     server: SharedState,
 ) -> Result<(), ()> {
     tracing::debug!("receive job result");
-    let result = msg.params.as_array().and_then(|p| {
-        let a = p.get(0);
-        if let Some(s) = a {
-            let p = serde_json::from_value::<JobResultParams>(s.clone()).ok();
-            return p;
-        }
-        None
+    let result = msg.params.clone().and_then(|p| {
+        p.as_array().and_then(|v| {
+            let a = v.get(0);
+            if let Some(s) = a {
+                let p = serde_json::from_value::<JobResultParams>(s.clone()).ok();
+                return p;
+            }
+            None
+
+        })
     });
     if let Some(p) = result {
         tracing::debug!("job of operator id {} connect saved", p.operator);

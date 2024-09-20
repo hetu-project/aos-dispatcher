@@ -6,7 +6,7 @@ use serde_json::Value;
 pub struct WsMethodMsg {
     pub id: String,
     pub method: Option<String>,
-    pub params: Value,
+    pub params: Option<Value>,
     pub result: Option<Value>,
     pub address: String,
     pub hash: String,
