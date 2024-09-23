@@ -5,6 +5,7 @@ use crate::tee::model::QuestionReq;
 use axum::{debug_handler, extract::State, Json};
 use diesel::{PgConnection, RunQueryDsl};
 use nostr_sdk::EventId;
+use serde_json::json;
 use std::str::FromStr;
 use tokio::sync::mpsc;
 
@@ -21,10 +22,16 @@ pub async fn opml_question_handler(
             callback: req.callback_url.clone(),
         };
         let server = server.0.write().await;
-        let mut conn = server
-            .pg
-            .get()
-            .expect("Failed to get a connection from pool");
+        let mut conn = match server.pg.get() {
+            Ok(conn) => conn,
+            Err(e) => {
+                tracing::error!("Failed to get a database connection: {:?}", e);
+                return Json(json!({
+                    "code": 500,
+                    "message": "",
+                }));
+            }
+        };
 
         // Store the question in the database
         if let Err(e) = create_opml_question(&mut conn, req.message_id.clone(), &opml_request) {

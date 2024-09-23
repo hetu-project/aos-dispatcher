@@ -159,10 +159,16 @@ pub async fn list_workers(State(state): State<SharedState>) -> axum::Json<Vec<St
 
 pub async fn list_questions_handler(State(server): State<SharedState>) -> Json<ListQuestionsResp> {
     let server = server.0.read().await;
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(ListQuestionsResp {
+                code: 500,
+                result: vec![],
+            });
+        }
+    };
 
     match list_questions(&mut conn) {
         Ok(questions) => {

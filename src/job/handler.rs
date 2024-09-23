@@ -21,10 +21,16 @@ pub async fn submit_job(
     let job = JobTask::create_with(&req, keys);
     let mut question: JobRequest = job.into();
     question.status = String::from("created");
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(json!({
+                "code": 500,
+                "message": "",
+            }));
+        }
+    };
     let q =
         pg::util::create_job_request(&mut conn, &mut question).expect("Error saving new question");
 
@@ -48,10 +54,16 @@ pub async fn query_job_result(
     tracing::info!("query job result {:?}", req);
     let server = server.0.write().await;
 
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(json!({
+                "code": 500,
+                "message": "",
+            }));
+        }
+    };
     let job_results =
         get_job_results_by_job_id(&mut conn, &req.job_id.to_string()).unwrap_or_default();
 
@@ -70,10 +82,16 @@ pub async fn query_job_verify(
     tracing::info!("query job result {:?}", req);
     let server = server.0.write().await;
 
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(json!({
+                "code": 500,
+                "message": "",
+            }));
+        }
+    };
     let job_results =
         get_job_verify_by_user_id(&mut conn, &req.user.to_string()).unwrap_or_default();
 

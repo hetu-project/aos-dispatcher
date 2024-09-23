@@ -54,10 +54,16 @@ pub async fn register(
     };
     let server = server.0.write().await;
     let _keys = &server.nostr_keys;
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(json!({
+                "code": 500,
+                "message": "",
+            }));
+        }
+    };
     let sample_range = sample_range_of_operator(&operator, 0, 6000, 10);
     operator.start = sample_range.0.to_string();
     operator.end = sample_range.1.to_string();
@@ -99,10 +105,16 @@ pub async fn operator_info(
     let operator_id = req.operator;
     let server = server.0.write().await;
     // let keys = &server.nostr_keys;
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(json!({
+                "code": 500,
+                "message": "",
+            }));
+        }
+    };
     let operator = get_operator_by_id(&mut conn, &operator_id).ok();
     Json(json!({
         "code": 200,

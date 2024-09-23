@@ -57,7 +57,7 @@ pub async fn receive_job_result(
     msg: &WsMethodMsg,
     _tx: mpsc::Sender<Message>,
     server: SharedState,
-) -> Result<(), ()> {
+) -> anyhow::Result<()> {
     tracing::debug!("receive job result");
     let result = msg.params.clone().and_then(|p| {
         p.as_array().and_then(|v| {
@@ -93,8 +93,7 @@ pub async fn receive_job_result(
         };
         let mut conn = server
             .pg
-            .get()
-            .expect("Failed to get a connection from pool");
+            .get()?;
 
         let _ = create_job_result(&mut conn, &jr);
     } else {
