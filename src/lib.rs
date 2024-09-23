@@ -6,7 +6,6 @@ pub mod consts;
 pub mod db;
 pub mod job;
 pub mod operator;
-pub mod opml;
 pub mod schema;
 pub mod service;
 pub mod tee;

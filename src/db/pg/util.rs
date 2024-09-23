@@ -154,6 +154,8 @@ pub fn get_job_verify_by_user_id(
         .left_join(job_request::table)
         .select(JobResult::as_select())
         .filter(job_request::user.eq(id))
+        .order(job_result::created_at.desc())
+        .limit(100)
         .load(conn)
 }
 

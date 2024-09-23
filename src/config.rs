@@ -47,6 +47,7 @@ pub struct CustomConfig {
     pub log: Option<CustomLog>,
     pub nostr: Option<CustomNostr>,
     pub account: Option<CustomAccount>,
+    pub db: Option<CustomDb>,
 }
 impl CustomConfig {
     pub async fn from_toml() -> Self {

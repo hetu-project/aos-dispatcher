@@ -6,12 +6,10 @@ use ed25519_dalek::{SecretKey, Signature, Signer, SigningKey};
 use rand::rngs::OsRng;
 use reqwest::Client;
 use std::collections::HashMap;
-use std::env;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 
 use crate::config::Config;
-use crate::opml::model::{OpmlAnswer, OpmlRequest};
 use crate::service::nostr::model::JobAnswer;
 use crate::tee::model::{AnswerReq, Operator, OperatorReq, OperatorResp, WorkerStatus};
 
@@ -23,7 +21,6 @@ pub struct Server {
     pub tee_operator_collections: HashMap<String, Operator>,
     pub pg: Pool<ConnectionManager<PgConnection>>,
     pub tee_channels: HashMap<String, mpsc::Sender<AnswerReq>>,
-    pub opml_channels: HashMap<String, mpsc::Sender<OpmlAnswer>>,
     pub worker_channels: HashMap<String, mpsc::Sender<Message>>,
     pub operator_channels: HashMap<String, mpsc::Sender<Message>>,
     pub dispatch_task_tx: Option<mpsc::Sender<u32>>,
@@ -57,7 +54,9 @@ impl Server {
         let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap());
         dotenv().ok();
 
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let db_url = config.custom_config.db.clone().and_then(|db| db.url);
+
+        let database_url = db_url.expect("DATABASE_URL must be set");
         let manager = ConnectionManager::<PgConnection>::new(database_url);
         let pg = Pool::builder()
             .build(manager)
@@ -70,7 +69,6 @@ impl Server {
             tee_operator_collections: Default::default(),
             pg,
             tee_channels: Default::default(),
-            opml_channels: Default::default(),
             worker_channels: Default::default(),
             operator_channels: Default::default(),
             dispatch_task_tx: Some(dispatch_task_tx),
@@ -114,23 +112,6 @@ impl Server {
         let resp = Client::new().post(op_url).json(&req).send().await.unwrap();
 
         resp.json::<OperatorResp>().await.unwrap()
-    }
-
-    pub async fn send_opml_request(
-        &self,
-        req: OpmlRequest,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        tracing::info!("Sending opml request {:?}", req);
-        let client = reqwest::Client::new();
-        let opml_server_url = format!("{}/api/v1/question", "http://127.0.0.1:1234");
-
-        let response = client.post(opml_server_url).json(&req).send().await?;
-
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(format!("OPML server responded with status: {}", response.status()).into())
-        }
     }
 }
 
