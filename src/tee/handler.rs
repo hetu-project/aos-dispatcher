@@ -73,10 +73,20 @@ pub async fn tee_callback(
     tracing::info!("tee_callback function triggered: {:?}", req);
 
     let server = server.0.read().await;
-    let mut conn = server
+    let mut conn = match server
         .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+        .get() {
+            Ok(c) => {
+                c
+            },
+            Err(_) => {
+                let response = AnswerResp {
+                    code: 500,
+                    result: "".to_string(),
+                };
+                return Json(response);
+            },
+        };
 
     let event_id = match EventId::from_str(&req.request_id) {
         Ok(id) => {
@@ -130,15 +140,10 @@ pub async fn tee_callback(
 
 pub async fn list_models(State(state): State<SharedState>) -> axum::Json<Vec<String>> {
     let server = state.0.read().await;
-    let models: Vec<String> = server
+    let unique_models: Vec<String> = server
         .tee_operator_collections
         .values()
         .flat_map(|operator| operator.worker_status.model_names.clone())
-        .collect();
-
-    // Remove duplicates
-    let unique_models: Vec<String> = models
-        .into_iter()
         .collect::<std::collections::HashSet<_>>()
         .into_iter()
         .collect();
