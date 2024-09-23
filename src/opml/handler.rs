@@ -1,52 +1,59 @@
-use axum::{debug_handler, extract::State, Json};
-use crate::tee::model::{Answer, AnswerResp, QuestionReq};
-use crate::server::server::SharedState;
-use uuid::Uuid;
-use chrono::Utc;
-use diesel::associations::HasTable;
-use diesel::{PgConnection, RunQueryDsl};
 use crate::opml::model::*;
-use crate::schema::opml_answers::dsl::opml_answers;
-use tokio::time::{timeout, Duration};
-use std::time::Duration as StdDuration;
+use crate::server::server::SharedState;
+use crate::service::nostr::model::JobAnswer;
+use crate::tee::model::QuestionReq;
+use axum::{debug_handler, extract::State, Json};
+use diesel::{PgConnection, RunQueryDsl};
+use nostr_sdk::EventId;
+use serde_json::json;
+use std::str::FromStr;
 use tokio::sync::mpsc;
 
-
 #[debug_handler]
-pub async fn opml_question_handler(State(server): State<SharedState>, Json(req): Json<QuestionReq>) -> Json<serde_json::Value> {
+pub async fn opml_question_handler(
+    State(server): State<SharedState>,
+    Json(req): Json<QuestionReq>,
+) -> Json<serde_json::Value> {
     {
-
         let opml_request = OpmlRequest {
             model: req.model,
             prompt: req.message,
             req_id: req.message_id.clone(),
             callback: req.callback_url.clone(),
         };
-        let mut server = server.0.write().await;
-        let mut conn = server.pg.get().expect("Failed to get a connection from pool");
+        let server = server.0.write().await;
+        let mut conn = match server.pg.get() {
+            Ok(conn) => conn,
+            Err(e) => {
+                tracing::error!("Failed to get a database connection: {:?}", e);
+                return Json(json!({
+                    "code": 500,
+                    "message": "",
+                }));
+            }
+        };
 
         // Store the question in the database
         if let Err(e) = create_opml_question(&mut conn, req.message_id.clone(), &opml_request) {
             tracing::error!("Failed to store OPML question: {:?}", e);
             return Json(serde_json::json!({
-            "code": 500,
-            "result": "Failed to store OPML question"
-        }));
+                "code": 500,
+                "result": "Failed to store OPML question"
+            }));
         }
 
         // Send the request to the OPML server
         if let Err(e) = server.send_opml_request(opml_request).await {
             tracing::error!("Failed to send OPML request: {:?}", e);
             return Json(serde_json::json!({
-            "code": 500,
-            "result": "Failed to send OPML request"
-        }));
+                "code": 500,
+                "result": "Failed to send OPML request"
+            }));
         }
     }
 
     let (tx, mut rx) = mpsc::channel(1);
     {
-
         let mut server = server.0.write().await;
         // Create a channel for receiving the answer
         server.opml_channels.insert(req.message_id.clone(), tx);
@@ -85,19 +92,36 @@ pub async fn opml_question_handler(State(server): State<SharedState>, Json(req):
     // }
 }
 
-
 #[debug_handler]
-pub async fn opml_callback(State(server): State<SharedState>, Json(req): Json<OpmlAnswer>) -> Json<OpmlAnswerResponse> {
+pub async fn opml_callback(
+    State(server): State<SharedState>,
+    Json(req): Json<OpmlAnswer>,
+) -> Json<OpmlAnswerResponse> {
     tracing::info!("Handling OPML answer: {:?}", req);
 
-    let mut server = server.0.write().await;
-    let mut conn = server.pg.get().expect("Failed to get a connection from pool");
+    let server = server.0.write().await;
+    let mut conn = server
+        .pg
+        .get()
+        .expect("Failed to get a connection from pool");
+    if let Some(job_status_tx) = server.job_status_tx.clone() {
+        job_status_tx
+            .send(JobAnswer {
+                event_id: EventId::from_str(&req.req_id).unwrap(),
+                answer: req.answer.clone(),
+            })
+            .await
+            .unwrap();
+    }
 
     match create_opml_answer(&mut conn, &req) {
         Ok(_) => {
             // Send the answer through the channel if it exists
             if let Some(tx) = server.opml_channels.get(&req.req_id) {
-                tracing::info!("Sending OPML answer through channel, req_id: {}", req.req_id);
+                tracing::info!(
+                    "Sending OPML answer through channel, req_id: {}",
+                    req.req_id
+                );
                 if let Err(e) = tx.send(req.clone()).await {
                     tracing::error!("Failed to send OPML answer through channel: {:?}", e);
                 }
@@ -120,7 +144,10 @@ pub async fn opml_callback(State(server): State<SharedState>, Json(req): Json<Op
     }
 }
 
-pub fn create_opml_answer(conn: &mut PgConnection, opml_answer: &OpmlAnswer) -> Result<(), diesel::result::Error> {
+pub fn create_opml_answer(
+    conn: &mut PgConnection,
+    opml_answer: &OpmlAnswer,
+) -> Result<(), diesel::result::Error> {
     let new_opml_answer = PgOPMLAnswer {
         req_id: opml_answer.req_id.clone(),
         node_id: opml_answer.node_id.clone(),

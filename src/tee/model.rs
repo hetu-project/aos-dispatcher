@@ -1,16 +1,14 @@
-use std::collections::HashMap;
-use chrono::NaiveDateTime;
-use diesel::associations::HasTable;
-use serde::{Deserialize, Serialize};
-use diesel::prelude::*;
-use reqwest::{Client, Url};
-use std::time::Duration;
+use crate::schema::answers;
+use crate::schema::answers::dsl::request_id as answer_request_id;
 use crate::schema::answers::dsl::*;
 use crate::schema::questions;
-use crate::schema::answers;
-use crate::schema::questions::dsl::{request_id, questions as questions_table};
-use crate::schema::answers::dsl::{request_id as answer_request_id};
-
+use crate::schema::questions::dsl::{questions as questions_table, request_id};
+use chrono::NaiveDateTime;
+use diesel::prelude::*;
+use reqwest::{Client, Url};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Operator {
@@ -36,6 +34,7 @@ pub struct OperatorReq {
     pub prompt_hash: String,
     pub signature: String,
     pub params: Params,
+    pub r#type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +52,6 @@ pub struct OperatorResp {
     pub data: HashMap<String, serde_json::Value>,
 }
 
-
 #[derive(Queryable, Selectable, Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::schema::answers)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -66,7 +64,11 @@ pub struct Answer {
     pub attestation: String,
     pub attest_signature: String,
     pub elapsed: i32,
-    #[serde(serialize_with = "serialize_naive_datetime", deserialize_with = "deserialize_naive_datetime")]
+    pub job_type: String,
+    #[serde(
+        serialize_with = "serialize_naive_datetime",
+        deserialize_with = "deserialize_naive_datetime"
+    )]
     pub created_at: NaiveDateTime,
 }
 
@@ -118,6 +120,8 @@ pub struct Question {
     pub conversation_id: String,
     pub model: String,
     pub callback_url: String,
+    pub job_type: String,
+    pub status: String,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,
 }
@@ -156,17 +160,13 @@ pub struct ListQuestionsResp {
     pub result: Vec<Question>,
 }
 
-
 #[derive(Serialize)]
 pub struct ListAnswersResp {
     pub code: u16,
     pub result: Vec<Answer>,
 }
 
-pub fn serialize_naive_datetime<S>(
-    date: &NaiveDateTime,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+pub fn serialize_naive_datetime<S>(date: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
@@ -174,9 +174,7 @@ where
     serializer.serialize_str(&s)
 }
 
-pub fn deserialize_naive_datetime<'de, D>(
-    deserializer: D,
-) -> Result<NaiveDateTime, D::Error>
+pub fn deserialize_naive_datetime<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -184,16 +182,30 @@ where
     NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S").map_err(serde::de::Error::custom)
 }
 
-
 pub fn list_questions(conn: &mut PgConnection) -> Result<Vec<Question>, diesel::result::Error> {
     questions_table.load::<Question>(conn)
+}
+
+pub fn query_latest_question(conn: &mut PgConnection) -> Result<Question, diesel::result::Error> {
+    let a = questions::table
+        .order_by(questions::created_at.desc())
+        .first(conn);
+    a
 }
 
 pub fn list_answers(conn: &mut PgConnection) -> Result<Vec<Answer>, diesel::result::Error> {
     answers.load::<Answer>(conn)
 }
 
-pub fn create_question(conn: &mut PgConnection, q_id: String, q_message: String, q_message_id: String, q_conversation_id: String, q_model: String, q_callback_url: String) -> Question {
+pub fn create_question(
+    conn: &mut PgConnection,
+    q_id: String,
+    q_message: String,
+    q_message_id: String,
+    q_conversation_id: String,
+    q_model: String,
+    q_callback_url: String,
+) -> Result<Question, diesel::result::Error> {
     let q = Question {
         request_id: q_id,
         message: q_message,
@@ -201,6 +213,8 @@ pub fn create_question(conn: &mut PgConnection, q_id: String, q_message: String,
         conversation_id: q_conversation_id,
         model: q_model,
         callback_url: q_callback_url,
+        status: "".into(),
+        job_type: "".into(),
         created_at: chrono::Local::now().naive_local(),
     };
 
@@ -208,11 +222,13 @@ pub fn create_question(conn: &mut PgConnection, q_id: String, q_message: String,
         .values(&q)
         .returning(Question::as_returning())
         .get_result(conn)
-        .expect("Error saving new question")
+    // .expect("Error saving new question")
 }
 
-
-pub fn create_tee_answer(conn: &mut PgConnection, req: &AnswerReq) -> Result<(), diesel::result::Error> {
+pub fn create_tee_answer(
+    conn: &mut PgConnection,
+    req: &AnswerReq,
+) -> Result<(), diesel::result::Error> {
     let ans = Answer {
         request_id: req.request_id.clone(),
         node_id: req.node_id.clone(),
@@ -222,6 +238,7 @@ pub fn create_tee_answer(conn: &mut PgConnection, req: &AnswerReq) -> Result<(),
         attestation: req.attestation.clone(),
         attest_signature: req.attest_signature.clone(),
         elapsed: req.elapsed as i32,
+        job_type: "".into(),
         created_at: chrono::Local::now().naive_local(),
     };
 
@@ -232,15 +249,27 @@ pub fn create_tee_answer(conn: &mut PgConnection, req: &AnswerReq) -> Result<(),
     Ok(())
 }
 
+pub fn get_tee_question(conn: &mut PgConnection) -> Result<Vec<Question>, diesel::result::Error> {
+    let r = questions::table
+        .select(Question::as_select())
+        // .as_query()
+        .load(conn);
+    r
+}
 
-pub fn get_question_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Question, diesel::result::Error> {
+pub fn get_question_by_id(
+    conn: &mut PgConnection,
+    q_id: &str,
+) -> Result<Question, diesel::result::Error> {
     questions::table
         .filter(request_id.eq(q_id))
         .first::<Question>(conn)
 }
 
-
-pub async fn forward_answer_to_callback(ans: &AnswerReq, callback: String) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn forward_answer_to_callback(
+    ans: &AnswerReq,
+    callback: String,
+) -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
 
     // Create a payload to send to the callback URL
@@ -273,8 +302,10 @@ pub async fn forward_answer_to_callback(ans: &AnswerReq, callback: String) -> Re
     }
 }
 
-
-pub fn get_answer_by_id(conn: &mut PgConnection, q_id: &str) -> Result<Option<Answer>, diesel::result::Error> {
+pub fn get_answer_by_id(
+    conn: &mut PgConnection,
+    q_id: &str,
+) -> Result<Option<Answer>, diesel::result::Error> {
     answers::table
         .filter(answer_request_id.eq(q_id))
         .first::<Answer>(conn)

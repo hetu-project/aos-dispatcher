@@ -1,0 +1,33 @@
+# version: '3.8'
+
+services:
+  postgres:
+    container_name: dispatcher_postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: hetuproject
+      PGDATA: /data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+  
+  dispatcher:
+    container_name: dispatcher_container
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: aos-dispatcher
+    environment:
+      DATABASE_URL: postgres://postgres:hetuproject@postgres:5432/dispatcher
+    ports:
+      - "3000:3000"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
