@@ -8,11 +8,8 @@ use axum::response::IntoResponse;
 use axum::{debug_handler, BoxError, Json};
 use nostr_sdk::EventId;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::borrow::Cow;
 use std::str::FromStr;
-use tokio::sync::mpsc;
-use tokio::time::Duration;
 
 #[debug_handler]
 pub async fn sign(
@@ -81,14 +78,24 @@ pub async fn tee_callback(
         .get()
         .expect("Failed to get a connection from pool");
 
+    let event_id = match EventId::from_str(&req.request_id) {
+        Ok(id) => {
+            id
+        },
+        Err(_) => {
+            EventId::all_zeros()
+        },
+    };
+
     if let Some(job_status_tx) = server.job_status_tx.clone() {
-        job_status_tx
+        if let Err(err) = job_status_tx
             .send(JobAnswer {
-                event_id: EventId::from_str(&req.request_id).unwrap(),
+                event_id: event_id,
                 answer: req.answer.clone(),
             })
-            .await
-            .unwrap();
+            .await {
+                tracing::error!("send job  answer error err {}", err);
+            }
     }
 
     match create_tee_answer(&mut conn, &req) {
@@ -173,10 +180,16 @@ pub async fn list_questions_handler(State(server): State<SharedState>) -> Json<L
 
 pub async fn list_answers_handler(State(server): State<SharedState>) -> Json<ListAnswersResp> {
     let server = server.0.read().await;
-    let mut conn = server
-        .pg
-        .get()
-        .expect("Failed to get a connection from pool");
+    let mut conn = match server.pg.get() {
+        Ok(conn) => conn,
+        Err(e) => {
+            tracing::error!("Failed to get a database connection: {:?}", e);
+            return Json(ListAnswersResp {
+                code: 500,
+                result: vec![],
+            });
+        }
+    };
 
     match list_answers(&mut conn) {
         Ok(answers) => {
