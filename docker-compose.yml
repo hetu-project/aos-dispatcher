@@ -5,11 +5,9 @@ services:
     container_name: dispatcher_postgres
     image: postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hetuproject}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: hetuproject
       PGDATA: /data/postgres
-    # volumes:
-    #    - postgres:/data/postgres
     ports:
       - "5432:5432"
     networks:
@@ -24,8 +22,6 @@ services:
     image: aos-dispatcher
     environment:
       DATABASE_URL: postgres://postgres:hetuproject@postgres:5432/dispatcher
-    # volumes:
-    #    - pgadmin:/var/lib/pgadmin
     ports:
       - "3000:3000"
     networks:

@@ -66,7 +66,6 @@ async fn main() {
         // .route("/sign", post(sign))
         // .route("/register_worker", post(register_worker))
         // .route("/receive_heart_beat", post(receive_heart_beat))
-        // .route("/api/question", post(tee_question_handler))
         .route("/api/operator/register", post(operator::handler::register))
         .route("/api/operator/info", post(operator::handler::operator_info))
         .route("/api/job/submit", post(job::handler::submit_job))

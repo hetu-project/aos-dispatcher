@@ -10,7 +10,7 @@ RUN  apt-get update && apt-get -y install libpq5
 
 WORKDIR /usr/src/app
 
-COPY . ./
+COPY ./dispatcher.toml ./
 
 COPY --from=builder /usr/src/app/target/release/aos-dispatcher ./
 
