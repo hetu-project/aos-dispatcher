@@ -100,15 +100,14 @@ impl Server {
         self.sign_key.verify(message, signature).is_ok()
     }
 
-    pub fn ecdsa_sign(&self, message: &[u8])-> Signature  {
+    pub fn ecdsa_sign(&self, message: &[u8]) -> Signature {
         self.sign_key.sign(keccak256(message).as_slice())
     }
 
-    pub fn ecdsa_verify(&self, message: &[u8], signature: Signature ) -> anyhow::Result<()> {
+    pub fn ecdsa_verify(&self, message: &[u8], signature: Signature) -> anyhow::Result<()> {
         self.sign_key.verify(message, &signature)?;
         Ok(())
     }
-
 }
 
 pub async fn sign_handler() -> String {

@@ -7,6 +7,7 @@ pub mod consts;
 pub mod db;
 pub mod error;
 pub mod job;
+pub mod message;
 pub mod operator;
 pub mod schema;
 pub mod service;

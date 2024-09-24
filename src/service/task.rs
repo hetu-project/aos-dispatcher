@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use alloy::signers::local::PrivateKeySigner;
 use anyhow::{anyhow, Context};
 use axum::extract::{ws::Message, FromRef};
 use serde_json::json;
@@ -14,6 +15,7 @@ use crate::{
             query_oldest_job_request_with_user,
         },
     },
+    message::MessageVerify,
     server::server::SharedState,
     ws::msg::WsMethodMsg,
 };
@@ -27,12 +29,13 @@ pub async fn dispatch_jobs_to_operators(
     jobs: Vec<JobRequest>,
     operators: &HashMap<String, mpsc::Sender<Message>>,
     position: String,
+    singer: PrivateKeySigner,
 ) {
+    let message_verify = MessageVerify { singer };
     for (_j, job) in jobs.iter().enumerate() {
         for (k, tx) in operators {
             tracing::debug!("dispatcher task to {}", k);
             tracing::debug!("dispatcher task  question to {}", k);
-
             let uuid = uuid::Uuid::new_v4();
             let id = uuid.to_string();
             let msg = WsMethodMsg {
@@ -55,6 +58,10 @@ pub async fn dispatch_jobs_to_operators(
                 ])),
                 result: None,
             };
+            let signature = message_verify
+                .ecdsa_sign(serde_json::to_vec(&msg).unwrap().as_slice())
+                .unwrap();
+            tracing::debug!("message verify {:#?}", signature.as_bytes());
             if let Err(e) = tx.send(msg.into()).await {
                 tracing::error!("Send Message {}", e);
             };
@@ -105,6 +112,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
             old_dispatch_jobs,
             &server.operator_channels,
             "before".into(),
+            server.ecdsa_signer.clone(),
         )
         .await;
     }
@@ -127,6 +135,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
         vec![job.clone()],
         &server.operator_channels,
         position.into(),
+        server.ecdsa_signer.clone(),
     )
     .await;
     Ok(())
