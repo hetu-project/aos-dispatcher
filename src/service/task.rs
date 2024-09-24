@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use alloy::signers::local::PrivateKeySigner;
 use anyhow::{anyhow, Context};
 use axum::extract::{ws::Message, FromRef};
+use nostr_sdk::hashes::hex::DisplayHex;
 use serde_json::json;
 use tokio::sync::mpsc;
 
@@ -38,7 +39,7 @@ pub async fn dispatch_jobs_to_operators(
             tracing::debug!("dispatcher task  question to {}", k);
             let uuid = uuid::Uuid::new_v4();
             let id = uuid.to_string();
-            let msg = WsMethodMsg {
+            let mut msg = WsMethodMsg {
                 id,
                 address: "".into(),
                 hash: "".into(),
@@ -58,6 +59,16 @@ pub async fn dispatch_jobs_to_operators(
                 ])),
                 result: None,
             };
+            use singer::msg_signer::{Keccak256Secp256k1, Signer};
+            let k = Keccak256Secp256k1;
+            let secret_key =  secp256k1::SecretKey::from_slice(&[0xcd; 32]).unwrap();
+            let sig = k.sign_message( &secret_key, &msg);
+            msg.signature = sig;
+
+            let secp = secp256k1::Secp256k1::new();
+            let public_key = secret_key.public_key(&secp);
+            let address = public_key.serialize().to_lower_hex_string();
+            msg.address = address;
             let signature = message_verify
                 .ecdsa_sign(serde_json::to_vec(&msg).unwrap().as_slice())
                 .unwrap();

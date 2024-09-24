@@ -1,11 +1,11 @@
-[package]
-name = "aos-dispatcher"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+members = [
+  "singer"
+]
 
-[dependencies]
+[workspace.dependencies]
 axum = { version = "0.7.5", features = ["macros", "ws"] }
 tokio = { version = "1.38.0", features = ["full"] }
 ed25519-dalek = { version = "2.1.1", features = ["rand_core"] }
@@ -28,5 +28,48 @@ toml = "0.8.19"
 anyhow = "1.0"
 thiserror = "1.0"
 async-trait = "0.1.82"
-
 diesel_migrations = "2.2.0"
+secp256k1 = "0.29.1"
+sha3 = "0.10.8"
+hex = "0.4.3"
+
+singer = { path = "./singer" }
+
+
+
+
+
+
+[package]
+name = "aos-dispatcher"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+ed25519-dalek.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+reqwest.workspace = true
+uuid.workspace = true
+diesel.workspace = true
+dotenvy.workspace = true
+chrono.workspace = true
+alloy.workspace = true
+nostr-sdk.workspace = true
+nostr.workspace = true
+toml.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+diesel_migrations.workspace = true
+singer.workspace = true
+secp256k1.workspace = true

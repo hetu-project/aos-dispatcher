@@ -1,6 +1,5 @@
 use alloy::primitives::keccak256;
 use alloy::signers::local::PrivateKeySigner;
-use alloy::signers::SignerSync;
 use axum::extract::ws::Message;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;

@@ -1,0 +1,12 @@
+[package]
+name = "singer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+secp256k1.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha3.workspace = true
+thiserror.workspace = true
+hex.workspace = true
