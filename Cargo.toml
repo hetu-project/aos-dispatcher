@@ -72,4 +72,5 @@ thiserror.workspace = true
 async-trait.workspace = true
 diesel_migrations.workspace = true
 singer.workspace = true
+hex.workspace = true
 secp256k1.workspace = true
