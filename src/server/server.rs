@@ -1,23 +1,26 @@
+use alloy::primitives::keccak256;
+use alloy::signers::local::PrivateKeySigner;
+use alloy::signers::SignerSync;
 use axum::extract::ws::Message;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use dotenvy::dotenv;
 use ed25519_dalek::{SecretKey, Signature, Signer, SigningKey};
 use rand::rngs::OsRng;
-use reqwest::Client;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 
 use crate::config::Config;
 use crate::service::nostr::model::JobAnswer;
-use crate::tee::model::{AnswerReq, Operator, OperatorReq, OperatorResp, WorkerStatus};
+use crate::tee::model::{AnswerReq, Operator};
 
 #[derive(Debug, Clone)]
 pub struct Server {
     pub config: Config,
     pub sign_key: SigningKey,
     pub nostr_keys: nostr::Keys,
+    pub ecdsa_signer: PrivateKeySigner,
     pub tee_operator_collections: HashMap<String, Operator>,
     pub pg: Pool<ConnectionManager<PgConnection>>,
     pub tee_channels: HashMap<String, mpsc::Sender<AnswerReq>>,
@@ -41,6 +44,13 @@ impl SharedState {
     }
 }
 
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+fn run_migration(conn: &mut PgConnection) {
+    conn.run_pending_migrations(MIGRATIONS).unwrap();
+}
+
 impl Server {
     pub async fn new(
         config: Config,
@@ -51,6 +61,7 @@ impl Server {
         // let sign_key = SigningKey::generate(&mut csprng);
         let secret_key: SecretKey = config.secret_key;
         let sign_key = SigningKey::from(secret_key);
+        let ecdsa_signer = PrivateKeySigner::from_slice(&secret_key).expect("error ecdsa singer");
         let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap());
         dotenv().ok();
 
@@ -62,10 +73,15 @@ impl Server {
             .build(manager)
             .expect("Failed to create pool.");
 
+        let mut conn = pg.get().expect("Failed to get conn.");
+
+        run_migration(&mut conn);
+
         Self {
             config,
             sign_key,
             nostr_keys,
+            ecdsa_signer,
             tee_operator_collections: Default::default(),
             pg,
             tee_channels: Default::default(),
@@ -84,35 +100,15 @@ impl Server {
         self.sign_key.verify(message, signature).is_ok()
     }
 
-    pub fn add_worker(
-        &mut self,
-        worker_name: String,
-        check_heart_beat: bool,
-        worker_status: WorkerStatus,
-        multimodal: bool,
-    ) {
-        let worker_name_clone = worker_name.clone();
-        let operator = Operator {
-            worker_name: worker_name_clone,
-            check_heart_beat,
-            worker_status,
-            multimodal,
-        };
-        self.tee_operator_collections.insert(worker_name, operator);
+    pub fn ecdsa_sign(&self, message: &[u8])-> Signature  {
+        self.sign_key.sign(keccak256(message).as_slice())
     }
 
-    pub async fn send_tee_inductive_task(
-        &self,
-        worker_name: String,
-        req: OperatorReq,
-    ) -> OperatorResp {
-        let operator = self.tee_operator_collections.get(&worker_name).unwrap();
-        let op_url = format!("{}/api/v1/question", operator.worker_name);
-        //let client = Client::builder().proxy(reqwest::Proxy::http("http://127.0.0.1:8080")?).build().unwrap();
-        let resp = Client::new().post(op_url).json(&req).send().await.unwrap();
-
-        resp.json::<OperatorResp>().await.unwrap()
+    pub fn ecdsa_verify(&self, message: &[u8], signature: Signature ) -> anyhow::Result<()> {
+        self.sign_key.verify(message, &signature)?;
+        Ok(())
     }
+
 }
 
 pub async fn sign_handler() -> String {
