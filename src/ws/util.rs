@@ -67,7 +67,6 @@ pub async fn receive_job_result(
                 return p;
             }
             None
-
         })
     });
     if let Some(p) = result {
@@ -91,9 +90,7 @@ pub async fn receive_job_result(
             }),
             created_at: chrono::Local::now().naive_local(),
         };
-        let mut conn = server
-            .pg
-            .get()?;
+        let mut conn = server.pg.get()?;
 
         let _ = create_job_result(&mut conn, &jr);
     } else {

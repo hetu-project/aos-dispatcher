@@ -1,3 +1,4 @@
+use aos_dispatcher::admin;
 use aos_dispatcher::config::CustomConfig;
 use aos_dispatcher::server::server::SharedState;
 use aos_dispatcher::service::nostr::model::JobAnswer;
@@ -67,9 +68,11 @@ async fn main() {
         .route("/api/job/submit", post(job::handler::submit_job))
         .route("/api/job/result", post(job::handler::query_job_result))
         .route("/api/job/verify", post(job::handler::query_job_verify))
-        // .route("/admin/list_workers", post(list_workers))
-        // .route("/admin/list_questions", post(list_questions_handler))
-        // .route("/admin/list_answers", post(list_answers_handler))
+        .route(
+            "/api/admin/project/register",
+            post(admin::handler::register),
+        )
+        .route("/api/admin/project/list", post(admin::handler::white_list))
         .route("/ws", get(ws::handler))
         .with_state(server)
         .layer(cors)

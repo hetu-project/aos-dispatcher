@@ -18,11 +18,11 @@ pub async fn subscription_service(
 ) {
     // let keys = Keys::from_mnemonic(MNEMONIC_PHRASE, None).unwrap();
     let secret_key = match SecretKey::from_slice(key.as_ref()) {
-            Ok(sk) => sk,
-            Err(e) => {
-                tracing::error!("Failed to create SecretKey: {:?}", e);
-                return;
-            }
+        Ok(sk) => sk,
+        Err(e) => {
+            tracing::error!("Failed to create SecretKey: {:?}", e);
+            return;
+        }
     };
     let keys = Keys::new(secret_key);
 
@@ -99,7 +99,7 @@ pub async fn subscription_service(
             if time >= 0 {
                 subscription = subscription.since(Timestamp::from(time as u64));
             } else {
-                 tracing::warn!("Latest question has a negative timestamp: {}", time);
+                tracing::warn!("Latest question has a negative timestamp: {}", time);
                 // subscription = subscription.since(Timestamp::now());
             }
         } else {
@@ -157,7 +157,7 @@ pub async fn subscription_service(
 
                             tracing::debug!("emit dispatch task: {:#?}", q.request_id);
                             let task_id = 1;
-                            if let Err(e)  = dispatch_task_tx.send(task_id).await {
+                            if let Err(e) = dispatch_task_tx.send(task_id).await {
                                 tracing::error!("Failed dispatch task error: {:#?}", e);
                             }
 
