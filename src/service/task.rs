@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use alloy::signers::local::PrivateKeySigner;
 use anyhow::{anyhow, Context};
 use axum::extract::{ws::Message, FromRef};
-use nostr_sdk::hashes::hex::DisplayHex;
 use serde_json::json;
 use tokio::sync::mpsc;
 
@@ -30,9 +29,9 @@ pub async fn dispatch_jobs_to_operators(
     jobs: Vec<JobRequest>,
     operators: &HashMap<String, mpsc::Sender<Message>>,
     position: String,
-    singer: PrivateKeySigner,
+    signer: PrivateKeySigner,
 ) {
-    let message_verify = MessageVerify { singer };
+    let message_verify = MessageVerify { signer };
     for (_j, job) in jobs.iter().enumerate() {
         for (k, tx) in operators {
             tracing::debug!("dispatcher task to {}", k);
@@ -47,7 +46,7 @@ pub async fn dispatch_jobs_to_operators(
                 method: Some("dispatch_job".into()),
                 params: Some(json!([
                     {
-                        "user": "",
+                        "user": job.user,
                         "seed": "",
                         "tag": job.tag,
                         "position": position,
@@ -59,21 +58,30 @@ pub async fn dispatch_jobs_to_operators(
                 ])),
                 result: None,
             };
-            use singer::msg_signer::{Keccak256Secp256k1, Signer};
-            let k = Keccak256Secp256k1;
-            let secret_key =  secp256k1::SecretKey::from_slice(&[0xcd; 32]).unwrap();
-            let sig = k.sign_message( &secret_key, &msg);
-            msg.signature = sig;
 
-            let secp = secp256k1::Secp256k1::new();
-            let public_key = secret_key.public_key(&secp);
-            let address = public_key.serialize().to_lower_hex_string();
-            msg.address = address;
-            let signature = message_verify
-                .ecdsa_sign(serde_json::to_vec(&msg).unwrap().as_slice())
-                .unwrap();
-            tracing::debug!("message verify {:#?}", signature.as_bytes());
-            if let Err(e) = tx.send(msg.into()).await {
+            let signed_msg = match message_verify.sign_message(&msg) {
+                Ok(m) => m,
+                Err(err) => {
+                    tracing::error!("sign msg error {}", err);
+                    continue;
+                }
+            };
+            tracing::debug!("send signed msg {:#?}", signed_msg);
+            // use singer::msg_signer::{Keccak256Secp256k1, Signer};
+            // let k = Keccak256Secp256k1;
+            // let secret_key =  secp256k1::SecretKey::from_slice(&[0xcd; 32]).unwrap();
+            // let sig = k.sign_message( &secret_key, &msg);
+            // msg.signature = sig;
+
+            // let secp = secp256k1::Secp256k1::new();
+            // let public_key = secret_key.public_key(&secp);
+            // let address = public_key.serialize().to_lower_hex_string();
+            // msg.address = address;
+            // let signature = message_verify
+            //     .ecdsa_sign(serde_json::to_vec(&msg).unwrap().as_slice())
+            //     .unwrap();
+            // tracing::debug!("message verify {:#?}", signature.as_bytes());
+            if let Err(e) = tx.send(signed_msg.into()).await {
                 tracing::error!("Send Message {}", e);
             };
 

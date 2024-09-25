@@ -15,7 +15,7 @@ use util::{connect_to_dispatcher, handle_command_msg, receive_job_result};
 // use futures::{sink::SinkExt, stream::StreamExt};
 use std::net::SocketAddr;
 
-use crate::server::server::SharedState;
+use crate::{message::MessageVerify, server::server::SharedState};
 
 pub mod msg;
 pub mod util;
@@ -51,6 +51,13 @@ async fn handle_socket(
 ) {
     tracing::info!("{} ws connect", who);
     let mut connect_operator = None;
+
+    let message_verify;
+    {
+        let mut server = server.0.write().await;
+        let signer = server.ecdsa_signer.clone();
+        message_verify = MessageVerify { signer };
+    }
     loop {
         tokio::select! {
           // client send to dispatcher
@@ -74,6 +81,13 @@ async fn handle_socket(
                       let command = util::convert_to_msg(t);
                       if let Ok(method_msg) = command {
                         tracing::debug!("Receive method msg {:#?}", method_msg);
+
+                        if let Ok(b)  = MessageVerify::verify_message(&method_msg) {
+                            if !b {
+                              tracing::error!("verify error msg {:#?}", method_msg)
+                            }
+                        };
+
 
                          if &method_msg.method == &Some("connect".into()) {
                           let result: WsResultMsg;

@@ -1,24 +1,22 @@
 use std::str::FromStr;
 
+use crate::ws::msg::WsMethodMsg;
 use alloy::{
     primitives::keccak256,
     signers::{local::PrivateKeySigner, Signature, SignerSync},
 };
-use crate::ws::msg::WsMethodMsg;
 
 pub struct MessageVerify {
-    pub singer: PrivateKeySigner,
+    pub signer: PrivateKeySigner,
 }
 
 impl MessageVerify {
     pub fn ecdsa_sign(&self, message: &[u8]) -> anyhow::Result<Signature> {
-        let signature = self
-            .singer
-            .sign_hash_sync(&keccak256(message))?;
+        let signature = self.signer.sign_hash_sync(&keccak256(message))?;
         Ok(signature)
     }
 
-    pub fn ecdsa_verify(&self, message: &[u8], signature: &str) -> anyhow::Result<()>  {
+    pub fn ecdsa_verify(&self, message: &[u8], signature: &str) -> anyhow::Result<()> {
         let sign = Signature::from_str(signature)?;
 
         // let address = sign.recover_address_from_prehash(&keccak256(message))?;
@@ -26,13 +24,13 @@ impl MessageVerify {
         Ok(())
     }
 
-    pub fn sign_message(&self, message: &WsMethodMsg) -> anyhow::Result<WsMethodMsg>{
+    pub fn sign_message(&self, message: &WsMethodMsg) -> anyhow::Result<WsMethodMsg> {
         let mut unsigned_message = message.clone();
-        unsigned_message.address = self.singer.address().to_string();
+        unsigned_message.address = self.signer.address().to_string();
         unsigned_message.signature = String::new();
 
         let msg = serde_json::to_vec(&unsigned_message)?;
-        let signature = self.singer.sign_message_sync(&msg)?;
+        let signature = self.signer.sign_message_sync(&msg)?;
 
         let mut signed_message = unsigned_message;
         signed_message.signature = hex::encode(signature.as_bytes());
@@ -57,7 +55,6 @@ impl MessageVerify {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use alloy::signers::local::PrivateKeySigner;
@@ -67,11 +64,9 @@ mod tests {
     use super::MessageVerify;
 
     #[test]
-    fn test_verify(){
-        let singer = PrivateKeySigner::from_slice(&[0x1f; 32]).expect("singer err");
-        let verify = MessageVerify {
-            singer
-        };
+    fn test_verify() {
+        let signer = PrivateKeySigner::from_slice(&[0x1f; 32]).expect("singer err");
+        let verify = MessageVerify { signer };
 
         let ws_msg = WsMethodMsg {
             id: "".into(),
@@ -92,11 +87,7 @@ mod tests {
         let mut modify_msg = message.clone();
         modify_msg.method = Some("dispatch_job".into());
 
-
         let is_verify = MessageVerify::verify_message(&modify_msg).expect("verify message error");
         assert_eq!(is_verify, false, "");
-
-
     }
-
 }
