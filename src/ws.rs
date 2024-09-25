@@ -52,12 +52,12 @@ async fn handle_socket(
     tracing::info!("{} ws connect", who);
     let mut connect_operator = None;
 
-    let message_verify;
-    {
-        let mut server = server.0.write().await;
-        let signer = server.ecdsa_signer.clone();
-        message_verify = MessageVerify { signer };
-    }
+    // let message_verify;
+    // {
+    //     let mut server = server.0.write().await;
+    //     let signer = server.ecdsa_signer.clone();
+    //     message_verify = MessageVerify { signer };
+    // }
     loop {
         tokio::select! {
           // client send to dispatcher

@@ -11,5 +11,4 @@ pub mod message;
 pub mod operator;
 pub mod schema;
 pub mod service;
-pub mod tee;
 pub mod ws;

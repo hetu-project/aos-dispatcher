@@ -12,7 +12,6 @@ use tokio::sync::{mpsc, RwLock};
 
 use crate::config::Config;
 use crate::service::nostr::model::JobAnswer;
-use crate::tee::model::{AnswerReq, Operator};
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -20,9 +19,7 @@ pub struct Server {
     pub sign_key: SigningKey,
     pub nostr_keys: nostr::Keys,
     pub ecdsa_signer: PrivateKeySigner,
-    pub tee_operator_collections: HashMap<String, Operator>,
     pub pg: Pool<ConnectionManager<PgConnection>>,
-    pub tee_channels: HashMap<String, mpsc::Sender<AnswerReq>>,
     pub worker_channels: HashMap<String, mpsc::Sender<Message>>,
     pub operator_channels: HashMap<String, mpsc::Sender<Message>>,
     pub dispatch_task_tx: Option<mpsc::Sender<u32>>,
@@ -81,9 +78,7 @@ impl Server {
             sign_key,
             nostr_keys,
             ecdsa_signer,
-            tee_operator_collections: Default::default(),
             pg,
-            tee_channels: Default::default(),
             worker_channels: Default::default(),
             operator_channels: Default::default(),
             dispatch_task_tx: Some(dispatch_task_tx),

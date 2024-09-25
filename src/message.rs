@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::ws::msg::WsMethodMsg;
 use alloy::{
-    primitives::keccak256,
+    // primitives::keccak256,
     signers::{local::PrivateKeySigner, Signature, SignerSync},
 };
 
@@ -11,19 +11,6 @@ pub struct MessageVerify {
 }
 
 impl MessageVerify {
-    pub fn ecdsa_sign(&self, message: &[u8]) -> anyhow::Result<Signature> {
-        let signature = self.signer.sign_hash_sync(&keccak256(message))?;
-        Ok(signature)
-    }
-
-    pub fn ecdsa_verify(&self, message: &[u8], signature: &str) -> anyhow::Result<()> {
-        let sign = Signature::from_str(signature)?;
-
-        // let address = sign.recover_address_from_prehash(&keccak256(message))?;
-        // address.to_string();
-        Ok(())
-    }
-
     pub fn sign_message(&self, message: &WsMethodMsg) -> anyhow::Result<WsMethodMsg> {
         let mut unsigned_message = message.clone();
         unsigned_message.address = self.signer.address().to_string();

@@ -1,8 +1,8 @@
 use aos_dispatcher::admin;
 use aos_dispatcher::config::CustomConfig;
+use aos_dispatcher::error::handle_error;
 use aos_dispatcher::server::server::SharedState;
 use aos_dispatcher::service::nostr::model::JobAnswer;
-use aos_dispatcher::tee::handler::*;
 use aos_dispatcher::ws;
 use axum::error_handling::HandleErrorLayer;
 use axum::http::Method;
