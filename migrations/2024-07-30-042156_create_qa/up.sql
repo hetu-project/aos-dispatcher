@@ -42,6 +42,7 @@ CREATE TABLE "project"(
 	"id" VARCHAR NOT NULL PRIMARY KEY,
 	"name" VARCHAR NOT NULL,
 	"address" VARCHAR NOT NULL,
+	"token" VARCHAR NOT NULL,
 	"status" VARCHAR NOT NULL,
 	"created_at" TIMESTAMP NOT NULL
 );

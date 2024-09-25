@@ -21,10 +21,13 @@ impl AdminService for Admin {
         conn: &mut PgConnection,
         req: &RegisterProjectReq,
     ) -> anyhow::Result<Project> {
+        let uuid = uuid::Uuid::new_v4();
+        let token = uuid.to_string();
         let project = Project {
             id: req.address.clone(),
             name: req.name.clone(),
             address: req.address.clone(),
+            token: token,
             status: "".into(),
             created_at: chrono::Local::now().naive_local(),
         };

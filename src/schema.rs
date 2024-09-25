@@ -45,6 +45,7 @@ diesel::table! {
         id -> Varchar,
         name -> Varchar,
         address -> Varchar,
+        token -> Varchar,
         status -> Varchar,
         created_at -> Timestamp,
     }

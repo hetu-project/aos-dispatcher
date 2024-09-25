@@ -74,6 +74,7 @@ pub struct Project {
     pub name: String,
     pub address: String,
     pub status: String,
+    pub token: String,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,
 }
