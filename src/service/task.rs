@@ -17,7 +17,7 @@ use crate::{
     },
     message::MessageVerify,
     server::server::SharedState,
-    ws::msg::WsMethodMsg,
+    ws::{msg::WsMethodMsg, util::convert_to_msg},
 };
 
 #[derive(Debug, Clone, FromRef)]
@@ -81,7 +81,27 @@ pub async fn dispatch_jobs_to_operators(
             //     .ecdsa_sign(serde_json::to_vec(&msg).unwrap().as_slice())
             //     .unwrap();
             // tracing::debug!("message verify {:#?}", signature.as_bytes());
-            if let Err(e) = tx.send(signed_msg.into()).await {
+            let text_msg: Message = signed_msg.into();
+            tracing::debug!("msg: {:#?}", text_msg.clone());
+
+            if let Message::Text(text) = text_msg.clone() {
+                tracing::debug!("msg text {}", text);
+                tracing::debug!("verify message start");
+
+                match convert_to_msg(text.as_str()) {
+                    Ok(method_msg) => {
+                        let result = MessageVerify::verify_message(&method_msg);
+
+                        tracing::debug!("verify message before send {:#?}", result);
+                    },
+                    Err(error) => {
+                        tracing::error!("verify message before send {:#?}", error);
+
+                    },
+                };
+ 
+            }
+            if let Err(e) = tx.send(text_msg).await {
                 tracing::error!("Send Message {}", e);
             };
 
