@@ -64,10 +64,4 @@ diesel::table! {
 
 diesel::joinable!(job_result -> job_request (job_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    job_request,
-    job_result,
-    operator,
-    project,
-    user,
-);
+diesel::allow_tables_to_appear_in_same_query!(job_request, job_result, operator, project, user,);

@@ -37,7 +37,7 @@ impl MessageVerify {
 
         let address = message.address.clone();
         let addr = origin.to_string();
-        let is_verify = addr.eq(&address);
+        let is_verify = addr.to_lowercase().eq(&address.to_lowercase());
         Ok(is_verify)
     }
 }

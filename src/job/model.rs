@@ -4,7 +4,7 @@ use nostr_sdk::{Event, EventBuilder, Keys, SingleLetterTag, Tag};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::db::pg::model::{JobRequest};
+use crate::db::pg::model::JobRequest;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmitJob {

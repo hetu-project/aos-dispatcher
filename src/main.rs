@@ -22,15 +22,21 @@ use tracing::Level;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let custom_config = CustomConfig::from_toml().await;
     let config = aos_dispatcher::config::Config::new().merge(&custom_config);
-    let max_level = if let Some(cl) = &custom_config.log_level {
-        tracing::Level::from_str(&cl).unwrap_or(Level::INFO)
-    } else {
-        Level::INFO
-    };
-    let addr = format!("{}:{}", config.server.host, config.server.port);
+    let max_level = custom_config
+        .log
+        .and_then(|c| c.level)
+        .map_or(Level::INFO, |cl| {
+            tracing::Level::from_str(&cl).unwrap_or(Level::INFO)
+        });
+    let server_addr = custom_config
+        .server
+        .map_or((String::from("0.0.0.0"), 3000), |s| {
+            (s.host.unwrap_or("0.0.0.0".into()), s.port.unwrap_or(3000))
+        });
+    let addr = format!("{}:{}", server_addr.0, server_addr.1);
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .with_max_level(max_level)
@@ -110,4 +116,6 @@ async fn main() {
         server_task,
         dispatch_task,
     );
+
+    Ok(())
 }
