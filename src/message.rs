@@ -31,6 +31,7 @@ impl MessageVerify {
 
         let mut origin_message = message.clone();
         origin_message.signature = String::new();
+        origin_message.hash = String::new();
 
         let msg = serde_json::to_vec(&origin_message)?;
         let origin = signature.recover_address_from_msg(&msg)?;
