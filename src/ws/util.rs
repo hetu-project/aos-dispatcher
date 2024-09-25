@@ -82,12 +82,12 @@ pub async fn receive_job_result(
             job_id: p.job_id.clone(),
             operator: p.operator,
             result: p.result.into(),
-            signature: "".into(),
+            signature: p.signature.clone(),
             job_type: "".into(),
             tag: p.tag.unwrap_or_default(),
-            clock: json!({
+            clock: p.clock.unwrap_or(json!({
                 "1": "2",
-            }),
+            })),
             created_at: chrono::Local::now().naive_local(),
         };
         let mut conn = server.pg.get()?;

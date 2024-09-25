@@ -37,6 +37,9 @@ impl MessageVerify {
 
         let address = message.address.clone();
         let addr = origin.to_string();
+        tracing::debug!("verify message recover address:{}", addr.to_lowercase());
+        tracing::debug!("verify message message address:{}", address.to_lowercase());
+
         let is_verify = addr.to_lowercase().eq(&address.to_lowercase());
         Ok(is_verify)
     }
