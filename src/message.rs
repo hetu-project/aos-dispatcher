@@ -80,5 +80,13 @@ mod tests {
 
         let is_verify = MessageVerify::verify_message(&modify_msg).expect("verify message error");
         assert_eq!(is_verify, false, "");
+
+        let text_msg = r#"
+        {"id":"555ebf10-f165-41f6-ae05-918a9232d862","method":"dispatch_job","params":[{"user":"b77f1799de0148c07bc6ef630fb75ac267f31d147cd28797ad145afe72302632","seed":"","tag":"","position":"","signature":"","clock":{"1":"1"},"job_id":"4a16467fc69713bd4ed0b45a4ddab8ed2b69ae14e48236973a75e941f20971fd","job":{"tag":"tee","prompt":"What is AI?","model":"ss","params":{"temperature":1.0,"top_p":0.5,"max_tokens":1024}}}],"result":null,"address":"0x1DdBd306eFFbb5FF29E41398A6a1198Ee6Fb51ce","hash":"","signature":"b5bb37c94af82989f6406de94c921224b00e6cd1ca8079b496507c23f306c56878d5894c8e5ff2fb9296bad91a908a0e6d0ddd516f7286557eaecf36cfcf49401c"}
+        "#;
+        let receive_msg = serde_json::from_str::<WsMethodMsg>(text_msg).unwrap();
+        // dbg!(receive_msg);
+        let is_verify = MessageVerify::verify_message(&receive_msg).expect("verify message error");
+        assert_eq!(is_verify, true, "");
     }
 }
