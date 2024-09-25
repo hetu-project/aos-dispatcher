@@ -19,41 +19,6 @@ where
     NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S").map_err(serde::de::Error::custom)
 }
 
-#[derive(Queryable, Selectable, Insertable, Serialize)]
-#[diesel(table_name = crate::schema::questions)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Question {
-    pub request_id: String,
-    pub message: String,
-    pub message_id: String,
-    pub conversation_id: String,
-    pub model: String,
-    pub callback_url: String,
-    pub job_type: String,
-    pub status: String,
-    #[serde(serialize_with = "serialize_naive_datetime")]
-    pub created_at: NaiveDateTime,
-}
-
-#[derive(Queryable, Selectable, Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = crate::schema::answers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Answer {
-    pub request_id: String,
-    pub node_id: String,
-    pub model: String,
-    pub prompt: String,
-    pub answer: String,
-    pub attestation: String,
-    pub attest_signature: String,
-    pub elapsed: i32,
-    pub job_type: String,
-    #[serde(
-        serialize_with = "serialize_naive_datetime",
-        deserialize_with = "deserialize_naive_datetime"
-    )]
-    pub created_at: NaiveDateTime,
-}
 
 #[derive(Queryable, Selectable, Insertable, Serialize)]
 #[diesel(table_name = crate::schema::operator)]
