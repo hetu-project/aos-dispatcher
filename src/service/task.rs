@@ -123,6 +123,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
             address: job.user.clone(),
             status: job.user.clone(),
             tag: job.tag.clone(),
+            count: 1,
             created_at: chrono::Local::now().naive_local(),
         };
         let user = create_user(&mut pool, &user)?;
@@ -142,8 +143,15 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
             tracing::debug!("update the job to the tag {}", &job.tag);
             // todo is remove user tag
 
+            if user.count > 10 {
+                user.tag = "".into();
+                user.count = 0;
+            } else {
+                user.count = user.count + 1;
+            }
+
             // update user
-            user.tag = "".into();
+
             position = "after";
             let user = create_user(&mut pool, &user)?;
 

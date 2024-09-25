@@ -86,6 +86,7 @@ pub struct User {
     pub name: String,
     pub address: String,
     pub status: String,
+    pub count: i32,
     pub tag: String,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,

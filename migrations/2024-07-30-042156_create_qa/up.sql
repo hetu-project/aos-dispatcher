@@ -54,5 +54,6 @@ CREATE TABLE "user"(
 	"address" VARCHAR NOT NULL,
 	"status" VARCHAR NOT NULL,
 	"tag" VARCHAR NOT NULL,
+	"count" INTEGER NOT NULL,
 	"created_at" TIMESTAMP NOT NULL
 );
