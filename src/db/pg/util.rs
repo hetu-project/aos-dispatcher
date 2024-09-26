@@ -154,7 +154,7 @@ pub fn query_oldest_job_request_with_user(
 ) -> Result<Vec<JobRequest>, diesel::result::Error> {
     let r = job_request::table
         .select(JobRequest::as_select())
-        .filter(job_request::id.eq(user))
+        .filter(job_request::user.eq(user))
         .order(job_request::created_at.desc())
         .limit(10)
         // .as_query()

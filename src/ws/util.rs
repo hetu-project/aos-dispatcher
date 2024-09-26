@@ -12,8 +12,7 @@ use super::msg::{ConnectParams, JobResultParams, WsMethodMsg};
 
 pub async fn handle_command_msg(msg: &String, _tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
     let method_msg = convert_to_msg(msg)?;
-    tracing::debug!("receive {:#?}", &method_msg.method);
-    let method = method_msg.method.ok_or(anyhow!("the method is empty"))?;
+    let method = method_msg.method.unwrap_or_default();
     tracing::debug!("Receive method msg {:#?}", method);
     match method.as_str() {
         "connect" => {}

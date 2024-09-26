@@ -63,6 +63,7 @@ async fn handle_socket(
           // client send to dispatcher
           Some(msg) = socket.recv() => {
               if let Ok(msg) = msg {
+                tracing::debug!("------------------ handle receive ws message start");
                 match &msg {
                     Message::Text(t) => {
 
@@ -72,10 +73,10 @@ async fn handle_socket(
                       // TODO reactor for handle msg
                       match handle_command_msg(&t, tx.clone()).await {
                           Ok(_) => {
-                            tracing::debug!("handle msg success");
+                            tracing::debug!("convert to method msg success");
                           },
                           Err(err) => {
-                            tracing::error!("handle msg error {}", err);
+                            tracing::error!("convert to method msg {}", err);
                           },
                       };
                       let command = util::convert_to_msg(t);
@@ -102,7 +103,6 @@ async fn handle_socket(
                               hash: "".into(),
                               signature: "".into(),
                             };
-                            tracing::debug!("method {:#?}", method_msg);
                             connect_operator = Some(op);
 
                           } else {
@@ -134,8 +134,6 @@ async fn handle_socket(
                               hash: "".into(),
                               signature: "".into(),
                             };
-                            tracing::debug!("method {:#?}", method_msg);
-
                           } else {
                             result = WsResultMsg {
                               id: method_msg.id.clone(),
@@ -160,8 +158,6 @@ async fn handle_socket(
                             hash: "".into(),
                             signature: "".into(),
                           };
-                          tracing::debug!("result {:#?}", method_msg);
-
                          }
 
                       }
@@ -181,6 +177,8 @@ async fn handle_socket(
                       break;
                     },
                 };
+
+                tracing::debug!("------------------ handle receive ws message end");
                 // msg
                 // Message::Pong(vec![])
               } else {
@@ -189,9 +187,10 @@ async fn handle_socket(
               };
           },
           Some(msg) = rx.recv() => {
-            tracing::debug!("send message to client");
+            tracing::debug!("send message to operator");
             if socket.send(msg).await.is_err() {
                   // client disconnected
+                  tracing::error!("send message to operator error and disconnected");
                   return;
               }
           }
