@@ -73,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/operator/info", post(operator::handler::operator_info))
         .route("/api/job/submit", post(job::handler::submit_job))
         .route("/api/job/result", post(job::handler::query_job_result))
-        .route("/api/job/detail", post(job::handler::query_job_result))
+        .route("/api/job/detail", post(job::handler::query_job_detail))
         .route("/api/job/verify", post(job::handler::query_job_verify))
         .route(
             "/api/admin/project/register",
