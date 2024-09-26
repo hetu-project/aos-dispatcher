@@ -32,6 +32,7 @@ pub async fn connect_to_dispatcher(
     msg: &WsMethodMsg,
     tx: mpsc::Sender<Message>,
     server: SharedState,
+    remote_addr: &String,
 ) -> Result<String, ()> {
     let operator = msg.params.clone().and_then(|p| {
         p.as_array().and_then(|v| {
@@ -46,7 +47,7 @@ pub async fn connect_to_dispatcher(
     if let Some(p) = operator {
         tracing::debug!("operator id {} connect", p.operator);
         let mut server = server.0.write().await;
-        server.operator_channels.insert(p.operator.clone(), tx);
+        server.operator_channels.insert(remote_addr.clone(), tx);
         return Ok(p.operator.clone());
     }
     Err(())

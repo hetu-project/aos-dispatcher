@@ -49,6 +49,7 @@ async fn handle_socket(
     _dispatch_tx: mpsc::Sender<u32>,
     server: SharedState,
 ) {
+  let remote_addr = who.to_string();
     tracing::info!("{} ws connect", who);
     let mut connect_operator = None;
 
@@ -90,7 +91,7 @@ async fn handle_socket(
 
                          if &method_msg.method == &Some("connect".into()) {
                           let result: WsResultMsg;
-                          if let Ok(op) = connect_to_dispatcher(&method_msg, tx.clone(), server.clone()).await {
+                          if let Ok(op) = connect_to_dispatcher(&method_msg, tx.clone(), server.clone(), &remote_addr).await {
                             result = WsResultMsg {
                               id: method_msg.id.clone(),
                               result: json!({
@@ -195,11 +196,12 @@ async fn handle_socket(
 
         }
     }
-    tracing::info!("{} ws disconnect", who);
+    tracing::info!("operator {:?} on {} ws disconnect", connect_operator, who);
     // clear worker channel
     let mut server = server.0.write().await;
     server.worker_channels.remove(&who.to_string());
-    if let Some(op) = connect_operator {
-        server.operator_channels.remove(&op);
-    }
+    server.operator_channels.remove(&remote_addr);
+    // if let Some(op) = connect_operator {
+    //     server.operator_channels.remove(&op);
+    // }
 }
