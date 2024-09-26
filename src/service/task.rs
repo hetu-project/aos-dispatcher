@@ -141,6 +141,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
             id: job.user.clone(),
             name: job.user.clone(),
             address: job.user.clone(),
+            verify_id: "".into(),
             status: job.user.clone(),
             tag: job.tag.clone(),
             count: 1,

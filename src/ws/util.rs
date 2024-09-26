@@ -79,6 +79,7 @@ pub async fn receive_job_result(
                 p.job_id.clone(),
                 p.tag.clone().unwrap_or_default()
             ),
+            verify_id: "".into(),
             job_id: p.job_id.clone(),
             operator: p.operator,
             result: p.result.into(),
