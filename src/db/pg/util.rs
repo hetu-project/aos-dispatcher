@@ -112,6 +112,17 @@ pub fn get_job_results_by_job_id(
         .load(conn)
 }
 
+pub fn get_job_request_by_job_id(
+    conn: &mut PgConnection,
+    q_id: &str,
+) -> Result<JobRequest, diesel::result::Error> {
+    job_request::table
+        .select(JobRequest::as_select())
+        .filter(job_request::id.eq(q_id))
+        .first(conn)
+}
+
+
 pub fn get_job_verify_by_user_id(
     conn: &mut PgConnection,
     id: &str,
