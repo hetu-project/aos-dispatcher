@@ -33,7 +33,7 @@ pub struct JobResultResp {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobVerifyReq {
-    pub job_id: String,
+    // pub job_id: String,
     pub user: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
