@@ -57,6 +57,7 @@ pub struct JobResult {
     pub job_id: String,
     pub operator: String,
     pub result: Value,
+    pub vrf: Value,
     pub clock: Value,
     pub signature: String,
     pub job_type: String,

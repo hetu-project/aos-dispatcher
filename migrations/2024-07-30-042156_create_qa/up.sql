@@ -19,6 +19,7 @@ CREATE TABLE "job_result"(
 	"job_id" VARCHAR NOT NULL REFERENCES job_request(id),
 	"operator" VARCHAR NOT NULL,
 	"result" JSON NOT NULL,
+	"vrf" JSON NOT NULL,
 	"tag" VARCHAR NOT NULL,
 	"clock" JSON NOT NULL,
 	"signature" VARCHAR NOT NULL,

@@ -19,6 +19,7 @@ diesel::table! {
         job_id -> Varchar,
         operator -> Varchar,
         result -> Json,
+        vrf -> Json,
         tag -> Varchar,
         clock -> Json,
         signature -> Varchar,
