@@ -63,7 +63,7 @@ async fn handle_socket(
           // client send to dispatcher
           Some(msg) = socket.recv() => {
               if let Ok(msg) = msg {
-                tracing::debug!("------------------ handle receive ws message start");
+                tracing::debug!("{}------------------ handle receive ws message start", "🚀");
                 match &msg {
                     Message::Text(t) => {
 
@@ -81,8 +81,6 @@ async fn handle_socket(
                       };
                       let command = util::convert_to_msg(t);
                       if let Ok(method_msg) = command {
-                        tracing::debug!("Receive method msg {:#?}", method_msg);
-
                         if let Ok(b)  = MessageVerify::verify_message(&method_msg) {
                             if !b {
                               tracing::error!("verify error msg {:#?}", method_msg)
@@ -178,7 +176,7 @@ async fn handle_socket(
                     },
                 };
 
-                tracing::debug!("------------------ handle receive ws message end");
+                tracing::debug!("🚀------------------ handle receive ws message end");
                 // msg
                 // Message::Pong(vec![])
               } else {

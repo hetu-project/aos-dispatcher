@@ -34,7 +34,7 @@ pub async fn dispatch_jobs_to_operators(
     let message_verify = MessageVerify { signer };
     for (_j, job) in jobs.iter().enumerate() {
         for (k, tx) in operators {
-            tracing::debug!("dispatcher job  to  the operator{}", k);
+            tracing::debug!("dispatcher job  to  the operator {}", k);
             let uuid = uuid::Uuid::new_v4();
             let id = uuid.to_string();
             let msg = WsMethodMsg {
@@ -181,13 +181,13 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
 
 pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
     while let Some(_) = rx.recv().await {
-        tracing::info!("------------------------------------------ start dispatch task");
+        tracing::info!("📦------------------------------------------ start dispatch task");
         match dispatch_job(server.clone()).await {
             Ok(_) => {
-                tracing::debug!("------------------------------------------ dispatch job success");
+                tracing::debug!("📦------------------------------------------ dispatch job success");
             }
             Err(err) => {
-                tracing::error!("------------------------------------------  dispatch job error {}", err);
+                tracing::error!("📦------------------------------------------  dispatch job error {}", err);
             }
         };
     }

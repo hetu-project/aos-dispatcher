@@ -57,7 +57,7 @@ pub async fn receive_job_result(
     _tx: mpsc::Sender<Message>,
     server: SharedState,
 ) -> anyhow::Result<()> {
-    tracing::debug!("receive job result");
+    tracing::debug!("🌏 receive job result");
     let result = msg.params.clone().and_then(|p| {
         p.as_array().and_then(|v| {
             let a = v.get(0);
