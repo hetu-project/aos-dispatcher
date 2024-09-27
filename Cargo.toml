@@ -2,7 +2,7 @@
 resolver = "2"
 
 members = [
-  "singer"
+  # "singer"
 ]
 
 [workspace.dependencies]
@@ -34,7 +34,6 @@ sha3 = "0.10.8"
 hex = "0.4.3"
 emojis = "0.6.3"
 
-singer = { path = "./singer" }
 
 
 
@@ -72,7 +71,6 @@ anyhow.workspace = true
 thiserror.workspace = true
 async-trait.workspace = true
 diesel_migrations.workspace = true
-singer.workspace = true
 hex.workspace = true
 emojis.workspace = true
 secp256k1.workspace = true
