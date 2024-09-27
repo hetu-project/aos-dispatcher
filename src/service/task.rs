@@ -83,7 +83,7 @@ pub async fn dispatch_jobs_to_operators(
 
             //         },
             //     };
- 
+
             // }
             if let Err(e) = tx.send(text_msg).await {
                 tracing::error!("Send Message {}", e);
@@ -117,7 +117,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
         let mut old_dispatch_jobs: Vec<JobRequest> =
             query_oldest_job_request_with_user(&mut pool, job.user.as_str()).unwrap_or_default();
 
-            tracing::debug!("older dispatch job count is {} ", old_dispatch_jobs.len());
+        tracing::debug!("older dispatch job count is {} ", old_dispatch_jobs.len());
         for oj in old_dispatch_jobs.iter_mut() {
             oj.tag = job.tag.clone();
         }
@@ -133,7 +133,11 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
             created_at: chrono::Local::now().naive_local(),
         };
         let user = create_user(&mut pool, &user)?;
-        tracing::debug!("crate or update user: {} with count {}", user.id, user.count);
+        tracing::debug!(
+            "crate or update user: {} with count {}",
+            user.id,
+            user.count
+        );
         dispatch_jobs_to_operators(
             old_dispatch_jobs,
             &server.operator_channels,
@@ -184,10 +188,15 @@ pub async fn dispatch_task(server: SharedState, mut rx: mpsc::Receiver<u32>) {
         tracing::info!("📦------------------------------------------ start dispatch task");
         match dispatch_job(server.clone()).await {
             Ok(_) => {
-                tracing::debug!("📦------------------------------------------ dispatch job success");
+                tracing::debug!(
+                    "📦------------------------------------------ dispatch job success"
+                );
             }
             Err(err) => {
-                tracing::error!("📦------------------------------------------  dispatch job error {}", err);
+                tracing::error!(
+                    "📦------------------------------------------  dispatch job error {}",
+                    err
+                );
             }
         };
     }

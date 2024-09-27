@@ -122,7 +122,6 @@ pub fn get_job_request_by_job_id(
         .first(conn)
 }
 
-
 pub fn get_job_verify_by_user_id(
     conn: &mut PgConnection,
     id: &str,
@@ -184,7 +183,10 @@ pub fn create_user(conn: &mut PgConnection, q: &User) -> Result<User, diesel::re
         .values(q)
         .on_conflict(schema::user::id)
         .do_update()
-        .set((schema::user::tag.eq(q.tag.clone()), schema::user::count.eq(q.count)))
+        .set((
+            schema::user::tag.eq(q.tag.clone()),
+            schema::user::count.eq(q.count),
+        ))
         .returning(User::as_returning())
         .get_result(conn)
     // .expect("Error saving new question")

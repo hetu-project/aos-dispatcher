@@ -1,6 +1,8 @@
 use crate::db::pg;
 use crate::db::pg::model::JobRequest;
-use crate::db::pg::util::{get_job_request_by_job_id, get_job_results_by_job_id, get_job_verify_by_user_id};
+use crate::db::pg::util::{
+    get_job_request_by_job_id, get_job_results_by_job_id, get_job_verify_by_user_id,
+};
 use crate::error::AppError;
 use crate::job::model::{JobResultReq, JobTask};
 use crate::schema::job_request;
@@ -85,8 +87,7 @@ pub async fn query_job_detail(
     let server = server.0.write().await;
 
     let mut conn = server.pg.get()?;
-    let job_request =
-    get_job_request_by_job_id(&mut conn, &req.job_id.to_string())?;
+    let job_request = get_job_request_by_job_id(&mut conn, &req.job_id.to_string())?;
     let response = json!({
         "code": 200,
         "result": job_request,
