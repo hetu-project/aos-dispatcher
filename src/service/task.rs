@@ -171,6 +171,10 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
         }
     }
 
+    // add tag fo test
+    position = "after";
+    job.tag = SUSPICION.into();
+    
     tracing::debug!("dispatcher current job start");
     dispatch_jobs_to_operators(
         vec![job.clone()],
