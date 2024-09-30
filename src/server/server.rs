@@ -1,5 +1,6 @@
 use alloy::primitives::keccak256;
-use alloy::signers::local::PrivateKeySigner;
+use alloy::signers::local::coins_bip39::English;
+use alloy::signers::local::{PrivateKeySigner, MnemonicBuilder};
 use axum::extract::ws::Message;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
@@ -57,6 +58,15 @@ impl Server {
         // let sign_key = SigningKey::generate(&mut csprng);
         let secret_key: SecretKey = config.secret_key;
         let sign_key = SigningKey::from(secret_key);
+        let account = config.custom_config.account.clone().and_then(|c| {
+            c.mnemonic.clone()
+        }).expect("no account config");
+        let evm_singer = MnemonicBuilder::<English>::default()
+        .phrase(account).build().expect("error build account");
+        let address = evm_singer.address().to_string();
+        tracing::debug!("evm address: {}", address);
+
+        // let ecdsa_signer = evm_singer;
         let ecdsa_signer = PrivateKeySigner::from_slice(&secret_key).expect("error ecdsa singer");
         let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap());
         dotenv().ok();

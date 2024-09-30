@@ -1,7 +1,7 @@
 -- Your SQL goes here
 -- CREATE DATABASE dispatcher
 
-CREATE TYPE JOB_TYPE AS ENUM ('', 'tee', 'opml');
+-- CREATE TYPE JOB_TYPE AS ENUM ('', 'tee', 'opml');
 
 CREATE TABLE "job_request"(
 	"id" VARCHAR NOT NULL PRIMARY KEY,

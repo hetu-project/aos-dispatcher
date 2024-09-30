@@ -14,6 +14,7 @@ port = 3000
 url="postgres://postgres:hetuproject@postgres:5432/postgres"
 
 [account]
+# 0x95E5AF9405Ed18094baEb3911a5fD90Ea2be032C
 mnemonic = "equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot"
 
 
