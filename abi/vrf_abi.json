@@ -1,141 +1,222 @@
 [
-  {
-      "inputs": [],
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_owner",
+          "type": "address"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "constructor"
-  },
-  {
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableInvalidOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableUnauthorizedAccount",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MAX_RANGE",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "getNumOperators",
       "outputs": [
-          {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-          }
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
       ],
       "stateMutability": "view",
       "type": "function"
-  },
-  {
+    },
+    {
       "inputs": [
-          {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-          }
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
       ],
       "name": "getOperatorsInRange",
       "outputs": [
-          {
-              "internalType": "address[]",
-              "name": "",
-              "type": "address[]"
-          }
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
       ],
       "stateMutability": "view",
       "type": "function"
-  },
-  {
+    },
+    {
       "inputs": [
-          {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-          }
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
       ],
       "name": "operatorRanges",
       "outputs": [
-          {
-              "internalType": "uint256",
-              "name": "start",
-              "type": "uint256"
-          },
-          {
-              "internalType": "uint256",
-              "name": "end",
-              "type": "uint256"
-          }
+        {
+          "internalType": "uint256",
+          "name": "start",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "end",
+          "type": "uint256"
+        }
       ],
       "stateMutability": "view",
       "type": "function"
-  },
-  {
+    },
+    {
       "inputs": [
-          {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-          }
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
       ],
       "name": "operators",
       "outputs": [
-          {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-          }
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
       ],
       "stateMutability": "view",
       "type": "function"
-  },
-  {
+    },
+    {
       "inputs": [],
       "name": "owner",
       "outputs": [
-          {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-          }
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
       ],
       "stateMutability": "view",
       "type": "function"
-  },
-  {
+    },
+    {
       "inputs": [
-          {
-              "internalType": "address",
-              "name": "operatorAddress",
-              "type": "address"
-          },
-          {
-              "internalType": "uint256",
-              "name": "start",
-              "type": "uint256"
-          },
-          {
-              "internalType": "uint256",
-              "name": "end",
-              "type": "uint256"
-          }
+        {
+          "internalType": "address",
+          "name": "operatorAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "start",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "end",
+          "type": "uint256"
+        }
       ],
       "name": "registerOperator",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-  },
-  {
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
-          {
-              "internalType": "address",
-              "name": "operatorAddress",
-              "type": "address"
-          },
-          {
-              "internalType": "uint256",
-              "name": "start",
-              "type": "uint256"
-          },
-          {
-              "internalType": "uint256",
-              "name": "end",
-              "type": "uint256"
-          }
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "operatorAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "start",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "end",
+          "type": "uint256"
+        }
       ],
       "name": "updateOperatorRange",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-  }
-]
+    }
+  ]
+  
