@@ -68,23 +68,6 @@ pub async fn dispatch_jobs_to_operators(
             let text_msg: Message = signed_msg.into();
             tracing::debug!("start send  success signed msg: {:#?}", text_msg.clone());
 
-            // if let Message::Text(text) = text_msg.clone() {
-            //     tracing::debug!("msg text {}", text);
-            //     tracing::debug!("verify message start");
-
-            //     match convert_to_msg(text.as_str()) {
-            //         Ok(method_msg) => {
-            //             let result = MessageVerify::verify_message(&method_msg);
-
-            //             tracing::debug!("verify message before send {:#?}", result);
-            //         },
-            //         Err(error) => {
-            //             tracing::error!("verify message before send {:#?}", error);
-
-            //         },
-            //     };
-
-            // }
             if let Err(e) = tx.send(text_msg).await {
                 tracing::error!("Send Message {}", e);
             };
@@ -98,7 +81,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
     let server = server.0.write().await;
     let operators = server.operator_channels.iter();
     if operators.len() == 0 {
-        tracing::warn!("the operator count is 0");
+        tracing::warn!("Operator count is zero");
         return Ok(());
     }
 
@@ -171,7 +154,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
         }
     }
 
-    // add tag fo test
+    // add tag for test
     position = "after";
     job.tag = SUSPICION.into();
 
