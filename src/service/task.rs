@@ -134,7 +134,7 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
         };
         let user = create_user(&mut pool, &user)?;
         tracing::debug!(
-            "crate or update user: {} with count {}",
+            "create or update user: {} with count {}",
             user.id,
             user.count
         );

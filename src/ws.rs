@@ -35,7 +35,7 @@ pub async fn handler(
 
     {
         let mut server = server.0.write().await;
-        server.worker_channels.insert(addr.to_string(), tx.clone());
+        // server.worker_channels.insert(addr.to_string(), tx.clone());
         dispatch_tx = server.dispatch_task_tx.clone().unwrap();
     }
 
@@ -77,14 +77,14 @@ async fn handle_socket(
                             tracing::debug!("convert to method msg success");
                           },
                           Err(err) => {
-                            tracing::error!("convert to method msg {}", err);
+                            tracing::error!("Failed to convert message '{}' to method message: {}", t, err);
                           },
                       };
                       let command = util::convert_to_msg(t);
                       if let Ok(method_msg) = command {
                         if let Ok(b)  = MessageVerify::verify_message(&method_msg) {
                             if !b {
-                              tracing::error!("verify error msg {:#?}", method_msg)
+                              tracing::error!("verify error msg {:#?}", method_msg);
                             }
                         };
 
@@ -199,9 +199,6 @@ async fn handle_socket(
     tracing::info!("operator {:?} on {} ws disconnect", connect_operator, who);
     // clear worker channel
     let mut server = server.0.write().await;
-    server.worker_channels.remove(&who.to_string());
+    // server.worker_channels.remove(&who.to_string());
     server.operator_channels.remove(&remote_addr);
-    // if let Some(op) = connect_operator {
-    //     server.operator_channels.remove(&op);
-    // }
 }
