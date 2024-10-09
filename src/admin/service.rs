@@ -35,7 +35,6 @@ impl AdminService for Admin {
             .values(&project)
             .returning(Project::as_returning())
             .get_result(conn)?;
-        async {}.await;
         Ok(result)
     }
 
@@ -43,7 +42,6 @@ impl AdminService for Admin {
         let list = schema::project::table
             .select(Project::as_select())
             .load(conn)?;
-        async {}.await;
         Ok(list)
     }
 }

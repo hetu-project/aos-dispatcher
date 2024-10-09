@@ -14,15 +14,9 @@ pub async fn subscription_service(
     dispatch_task_tx: mpsc::Sender<u32>,
     key: ed25519_dalek::SecretKey,
     relay_url: String,
-) {
+) -> anyhow::Result<()> {
     // let keys = Keys::from_mnemonic(MNEMONIC_PHRASE, None).unwrap();
-    let secret_key = match SecretKey::from_slice(key.as_ref()) {
-        Ok(sk) => sk,
-        Err(e) => {
-            tracing::error!("Failed to create SecretKey: {:?}", e);
-            return;
-        }
-    };
+    let secret_key =  SecretKey::from_slice(key.as_ref())?;
     let keys = Keys::new(secret_key);
 
     let bech32_address = keys.public_key().to_bech32().unwrap();
@@ -109,4 +103,5 @@ pub async fn subscription_service(
 
     tracing::info!("Subscription ID: [auto-closing] end {:#?}", sub);
     job_status_submit.await.unwrap();
+    Ok(())
 }

@@ -44,8 +44,9 @@ impl SharedState {
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
-fn run_migration(conn: &mut PgConnection) {
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
+fn run_migration(conn: &mut PgConnection) -> anyhow::Result<()> {
+    conn.run_pending_migrations(MIGRATIONS).expect("run migration error");
+    Ok(())
 }
 
 impl Server {
@@ -64,14 +65,14 @@ impl Server {
             .clone()
             .and_then(|c| c.mnemonic.clone())
             .expect("no account config");
-        let evm_singer = MnemonicBuilder::<English>::default()
+        let evm_signer = MnemonicBuilder::<English>::default()
             .phrase(account)
             .build()
             .expect("error build account");
-        let address = evm_singer.address().to_string();
+        let address = evm_signer.address().to_string();
         tracing::debug!("evm address: {}", address);
 
-        let ecdsa_signer = evm_singer;
+        let ecdsa_signer = evm_signer;
         // let ecdsa_signer = PrivateKeySigner::from_slice(&secret_key).expect("error ecdsa singer");
         let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap());
         dotenv().ok();
@@ -86,7 +87,7 @@ impl Server {
 
         let mut conn = pg.get().expect("Failed to get conn.");
 
-        run_migration(&mut conn);
+        run_migration(&mut conn).expect("run migration error");
 
         Self {
             config,
@@ -100,29 +101,4 @@ impl Server {
             job_status_tx: Some(job_status_tx),
         }
     }
-
-    pub fn sign(&self, message: &[u8]) -> Signature {
-        self.sign_key.sign(message)
-    }
-
-    pub fn verify(&self, message: &[u8], signature: &Signature) -> bool {
-        self.sign_key.verify(message, signature).is_ok()
-    }
-
-    pub fn ecdsa_sign(&self, message: &[u8]) -> Signature {
-        self.sign_key.sign(keccak256(message).as_slice())
-    }
-
-    pub fn ecdsa_verify(&self, message: &[u8], signature: Signature) -> anyhow::Result<()> {
-        self.sign_key.verify(message, &signature)?;
-        Ok(())
-    }
-}
-
-pub async fn sign_handler() -> String {
-    let mut csprng = OsRng;
-    let key = SigningKey::generate(&mut csprng);
-    let message: &[u8] = b"Hello, World!";
-    let signature = key.sign(message);
-    signature.to_string()
 }

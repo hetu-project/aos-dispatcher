@@ -11,7 +11,7 @@ pub async fn register(
     State(server): State<SharedState>,
     Json(req): Json<RegisterProjectReq>,
 ) -> anyhow::Result<Json<Value>, AppError> {
-    let server = server.0.write().await;
+    let server = server.0.read().await;
     let mut conn = server.pg.get()?;
     let result = Admin::register_project(&mut conn, &req).await?;
     Ok(Json(json!({
@@ -22,7 +22,7 @@ pub async fn register(
 pub async fn white_list(
     State(server): State<SharedState>,
 ) -> anyhow::Result<Json<Value>, AppError> {
-    let server = server.0.write().await;
+    let server = server.0.read().await;
     let mut conn = server.pg.get()?;
     let result = Admin::project_list(&mut conn).await?;
     Ok(Json(json!({
