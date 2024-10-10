@@ -184,8 +184,8 @@ pub fn create_user(conn: &mut PgConnection, q: &User) -> Result<User, diesel::re
         .on_conflict(schema::user::id)
         .do_update()
         .set((
-            schema::user::tag.eq(q.tag.clone()),
-            schema::user::count.eq(q.count),
+            schema::user::tag.eq(&q.tag),
+            schema::user::count.eq(&q.count),
         ))
         .returning(User::as_returning())
         .get_result(conn)

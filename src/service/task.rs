@@ -34,7 +34,7 @@ pub async fn dispatch_jobs_to_operators(
     let message_verify = MessageVerify { signer };
     for (_j, job) in jobs.iter().enumerate() {
         for (k, tx) in operators {
-            tracing::debug!("dispatcher job  to  the operator {}", k);
+            tracing::debug!("dispatcher job to the operator {}", k);
             let uuid = uuid::Uuid::new_v4();
             let id = uuid.to_string();
             let msg = WsMethodMsg {
@@ -153,10 +153,6 @@ pub async fn dispatch_job(server: SharedState) -> anyhow::Result<()> {
             tracing::debug!("update user: {} with count {}", user.id, user.count);
         }
     }
-
-    // add tag for test
-    // position = "after";
-    // job.tag = SUSPICION.into();
 
     tracing::debug!("dispatcher current job start");
     dispatch_jobs_to_operators(

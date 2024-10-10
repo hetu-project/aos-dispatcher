@@ -5,7 +5,7 @@ use crate::{error::AppError, server::server::SharedState};
 
 use super::{
     model::RegisterProjectReq,
-    service::{Admin, AdminService},
+    util::{Admin, AdminService},
 };
 pub async fn register(
     State(server): State<SharedState>,

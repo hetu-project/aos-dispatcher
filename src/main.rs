@@ -112,11 +112,12 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
-    let _ = tokio::join!(
+    let (server_result, dispatch_result) = tokio::join!(
         // nostr_sub_task,
         server_task,
         dispatch_task,
     );
-
+    server_result?;
+    dispatch_result?;
     Ok(())
 }

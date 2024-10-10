@@ -74,7 +74,7 @@ impl Server {
 
         let ecdsa_signer = evm_signer;
         // let ecdsa_signer = PrivateKeySigner::from_slice(&secret_key).expect("error ecdsa singer");
-        let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap());
+        let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap_or(nostr::SecretKey::generate()));
         dotenv().ok();
 
         let db_url = config.custom_config.db.clone().and_then(|db| db.url);

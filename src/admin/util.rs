@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use diesel::{query_dsl::methods::SelectDsl, PgConnection, RunQueryDsl, SelectableHelper};
 
 use crate::{db::pg::model::Project, schema};
@@ -24,12 +23,12 @@ impl AdminService for Admin {
         let uuid = uuid::Uuid::new_v4();
         let token = uuid.to_string();
         let project = Project {
-            id: req.address.clone(),
+            id: format!("{}", req.address),
             name: req.name.clone(),
             address: req.address.clone(),
-            token: token,
-            status: "".into(),
-            created_at: chrono::Local::now().naive_local(),
+            token: format!("{}", token),
+            status: format!("{}", "").into(),
+            created_at: chrono::Local::now().naive_utc(),
         };
         let result = diesel::insert_into(schema::project::table)
             .values(&project)

@@ -85,6 +85,7 @@ async fn handle_socket(
                         if let Ok(b)  = MessageVerify::verify_message(&method_msg) {
                             if !b {
                               tracing::error!("verify error msg {:#?}", method_msg);
+                              continue;
                             }
                         };
 

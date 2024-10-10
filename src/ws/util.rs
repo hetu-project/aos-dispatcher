@@ -12,7 +12,7 @@ use super::msg::{ConnectParams, JobResultParams, WsMethodMsg};
 
 pub async fn handle_command_msg(msg: &String, _tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
     let method_msg = convert_to_msg(msg)?;
-    let method = method_msg.method.unwrap_or_default();
+    let method = method_msg.method.unwrap_or(String::new());
     tracing::debug!("Receive method msg {:#?}", method);
     match method.as_str() {
         "connect" => {}
@@ -46,6 +46,7 @@ pub async fn connect_to_dispatcher(
     });
     if let Some(p) = operator {
         tracing::debug!("operator id {} connect", p.operator);
+        tracing::debug!("operator remote_addr {} connect", remote_addr);
         let mut server = server.0.write().await;
         server.operator_channels.insert(remote_addr.clone(), tx);
         return Ok(p.operator.clone());
@@ -79,7 +80,7 @@ pub async fn receive_job_result(
                 p.job_id.clone(),
                 p.tag.clone().unwrap_or_default()
             ),
-            verify_id: "".into(),
+            verify_id: p.job_id.clone(),
             job_id: p.job_id.clone(),
             operator: p.operator,
             result: p.result.into(),
@@ -87,9 +88,7 @@ pub async fn receive_job_result(
             signature: p.signature.clone(),
             job_type: "".into(),
             tag: p.tag.unwrap_or_default(),
-            clock: p.clock.unwrap_or(json!({
-                "1": "2",
-            })),
+            clock: p.clock.unwrap_or(json!({})),
             created_at: chrono::Local::now().naive_local(),
         };
         let mut conn = server.pg.get()?;
