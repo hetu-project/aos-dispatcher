@@ -6,7 +6,7 @@ level="debug"
 
 [nostr]
 # nostr relay
-relay="ws://localhost:7010"
+relay=""
 
 
 [server]
@@ -17,7 +17,7 @@ port = 3000
 
 [db]
 # postgres database url
-url="postgres://postgres:hetuproject@postgres:5432/postgres"
+url=""
 
 
 [account]
@@ -27,9 +27,9 @@ mnemonic = ""
 
 [register]
 # register contract chain rpc endpoint
-endpoint = "https://1rpc.io/holesky"
+endpoint = ""
 # operator register contract address
-contract = "0x0C6425A2C1548a69729a491533FF882bd8de5752"
+contract = ""
 # the account mnemonic of the register contract owner
 account = ""
 
