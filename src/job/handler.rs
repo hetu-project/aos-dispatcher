@@ -1,11 +1,15 @@
 use crate::db::pg;
 use crate::db::pg::model::JobRequest;
-use crate::db::pg::util::{get_job_results_by_job_id, get_job_verify_by_user_id};
+use crate::db::pg::util::{
+    get_job_request_by_job_id, get_job_results_by_job_id, get_job_verify_by_user_id,
+};
+use crate::error::AppError;
 use crate::job::model::{JobResultReq, JobTask};
+use crate::schema::job_request;
 use crate::server::server::SharedState;
 use axum::extract::State;
 use axum::{debug_handler, Json};
-use serde_json::json;
+use serde_json::{json, Value};
 
 use super::model::{JobVerifyReq, SubmitJob};
 
@@ -72,6 +76,23 @@ pub async fn query_job_result(
         "result": job_results,
     });
     Json(response)
+}
+
+#[debug_handler]
+pub async fn query_job_detail(
+    State(server): State<SharedState>,
+    Json(req): Json<JobResultReq>,
+) -> anyhow::Result<Json<Value>, AppError> {
+    tracing::info!("query job detail {:?}", req);
+    let server = server.0.write().await;
+
+    let mut conn = server.pg.get()?;
+    let job_request = get_job_request_by_job_id(&mut conn, &req.job_id.to_string())?;
+    let response = json!({
+        "code": 200,
+        "result": job_request,
+    });
+    Ok(Json(response))
 }
 
 #[debug_handler]

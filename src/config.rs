@@ -47,6 +47,7 @@ pub struct CustomConfig {
     pub log: Option<CustomLog>,
     pub nostr: Option<CustomNostr>,
     pub account: Option<CustomAccount>,
+    pub db: Option<CustomDb>,
 }
 impl CustomConfig {
     pub async fn from_toml() -> Self {
@@ -72,8 +73,6 @@ impl CustomConfig {
 }
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub server: ServerConfig,
-    pub database: DatabaseConfig,
     pub secret_key: SecretKey,
     pub custom_config: CustomConfig,
 }
@@ -93,13 +92,6 @@ pub struct DatabaseConfig {
 impl Config {
     pub fn new() -> Self {
         Self {
-            server: ServerConfig {
-                host: "0.0.0.0".to_string(),
-                port: 3000,
-            },
-            database: DatabaseConfig {
-                url: "postgres://postgres:hetuproject@127.0.0.1:5432/dispatcher".to_string(),
-            },
             secret_key: SecretKey::default(),
             custom_config: CustomConfig::default(),
         }
@@ -107,15 +99,18 @@ impl Config {
 
     pub fn merge(&mut self, custom: &CustomConfig) -> Self {
         let mut config = Self::new();
-        config.server.host = custom.address.clone().unwrap_or(config.server.host);
-        config.server.port = custom.port.unwrap_or(config.server.port);
-        config.secret_key = custom
-            .mnemonic
-            .clone()
-            .map_or(config.secret_key, |mnemonic| {
-                let pair = Keys::from_mnemonic(mnemonic, None).unwrap();
-                pair.secret_key().unwrap().secret_bytes()
-            });
+        let secret_key = custom
+        .account
+        .clone()
+        .and_then(|a| a.mnemonic)
+        .and_then(|mnemonic| {
+             Keys::from_mnemonic(mnemonic, None).ok()
+        }).and_then(|p| {
+            p.secret_key().cloned().ok()
+        }).and_then(|s| {
+            Some(s.secret_bytes())
+        }).unwrap_or(SecretKey::default());
+        config.secret_key = secret_key;
         config.custom_config = custom.clone();
         config
     }

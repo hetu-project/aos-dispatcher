@@ -1,34 +1,39 @@
-log_level = "debug"
-host = "0.0.0.0"
-port = 3000
-mnemonic = "equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot"
-
-default_relay = "ws://localhost:7010"
-
 
 [log]
-
+# log level
 level="debug"
 
+
 [nostr]
-relay="ws://localhost:7010"
+# nostr relay
+relay=""
 
 
 [server]
+# server config
 host = "0.0.0.0"
 port = 3000
 
+
 [db]
-url="postgres://postgres:hetuproject@127.0.0.1:5432/dispatcher"
+# postgres database url
+url=""
+
 
 [account]
-mnemonic = "equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot"
+# the account mnemonic of the dispatcher to send message to operator
+mnemonic = ""
 
 
 [register]
-# rpc endpoint
-endpoint = "https://1rpc.io/holesky"
+# register contract chain rpc endpoint
+endpoint = ""
 # operator register contract address
-contract = "0x27e4384ecc11810c2F49914390052b22c4e3CcC0"
+contract = ""
+# the account mnemonic of the register contract owner
+account = ""
 
-account = "equal dragon fabric refuse stable cherry smoke allow alley easy never medal attend together lumber movie what sad siege weather matrix buffalo state shoot"
+
+[admin]
+# the verify token of admin
+token = ""

@@ -6,7 +6,6 @@ use nostr_sdk::{Client, EventBuilder, Filter, Kind, RelayPoolNotification, Secre
 use tokio::sync::mpsc;
 
 use crate::server::server::SharedState;
-use crate::tee::model::{create_question, query_latest_question};
 pub mod model;
 pub mod util;
 pub async fn subscription_service(
@@ -15,15 +14,9 @@ pub async fn subscription_service(
     dispatch_task_tx: mpsc::Sender<u32>,
     key: ed25519_dalek::SecretKey,
     relay_url: String,
-) {
+) -> anyhow::Result<()> {
     // let keys = Keys::from_mnemonic(MNEMONIC_PHRASE, None).unwrap();
-    let secret_key = match SecretKey::from_slice(key.as_ref()) {
-            Ok(sk) => sk,
-            Err(e) => {
-                tracing::error!("Failed to create SecretKey: {:?}", e);
-                return;
-            }
-    };
+    let secret_key =  SecretKey::from_slice(key.as_ref())?;
     let keys = Keys::new(secret_key);
 
     let bech32_address = keys.public_key().to_bech32().unwrap();
@@ -87,26 +80,6 @@ pub async fn subscription_service(
   // .limit(10)
   ;
 
-    {
-        let server = server.0.write().await;
-        let mut conn = server
-            .pg
-            .get()
-            .expect("Failed to get a connection from pool");
-
-        if let Ok(latest_question) = query_latest_question(&mut conn) {
-            let time = latest_question.created_at.and_utc().timestamp();
-            if time >= 0 {
-                subscription = subscription.since(Timestamp::from(time as u64));
-            } else {
-                 tracing::warn!("Latest question has a negative timestamp: {}", time);
-                // subscription = subscription.since(Timestamp::now());
-            }
-        } else {
-            // subscription.since(Timestamp::now())
-        }
-    }
-
     client.subscribe(vec![subscription], None).await.unwrap();
     tracing::info!("Subscription ID: [auto-closing] start");
 
@@ -119,91 +92,6 @@ pub async fn subscription_service(
                     // tracing::info!("receive task {:#?}", event);
                     tracing::info!("receive task event {:#?}", event.id());
                     // let uuid = uuid::Uuid::new_v4();
-                    let request_id = event.id().to_string();
-                    // let mut e_model = None;
-                    // let mut e_prompt = None;
-
-                    let aos_task = util::AosTask::parse_event(&event).unwrap();
-                    tracing::debug!("start store task start {:#?}", request_id);
-
-                    {
-                        let server = server.0.write().await;
-                        let mut conn = server
-                            .pg
-                            .get()
-                            .expect("Failed to get a connection from pool");
-                        let message = aos_task.prompt.unwrap_or_default();
-                        let message_id = event.id().to_string();
-                        let conversation_id = event.id().to_string();
-                        let model = aos_task.model.unwrap_or_default();
-                        let callback_url = event.id().to_string();
-
-                        // TODO: dispatch task to worker by websocket
-                        // dispatch_task_rx.send(2).await.unwrap();
-
-                        let q = create_question(
-                            &mut conn,
-                            request_id.clone(),
-                            message.clone(),
-                            message_id,
-                            conversation_id,
-                            model.clone(),
-                            callback_url.clone(),
-                        );
-
-                        if let Ok(q) = q {
-                            // start dispatch tee task
-                            tracing::info!("store task success: {:#?}", q.request_id);
-
-                            tracing::debug!("emit dispatch task: {:#?}", q.request_id);
-                            let task_id = 1;
-                            if let Err(e)  = dispatch_task_tx.send(task_id).await {
-                                tracing::error!("Failed dispatch task error: {:#?}", e);
-                            }
-
-                            // let hash = &q.request_id;
-                            // let signature = server.sign(hash.as_bytes());
-                            //   let op_req = OperatorReq {
-                            //     request_id: q.request_id.clone(),
-                            //     node_id: "".to_string(),
-                            //     model: model.clone(),
-                            //     prompt: message.clone(),
-                            //     prompt_hash: hash.into(),
-                            //     signature: signature.to_string(),
-                            //     params: aos_task.params.clone(),
-                            //     r#type: "TEE".to_string(),
-                            //   };
-                            // let next_work_name = server.tee_operator_collections.keys().next();
-                            // match  next_work_name {
-                            //   Some(work_name) => {
-                            //     server.send_tee_inductive_task(work_name.clone(), op_req).await;
-                            //     tracing::debug!("dispatched task {:#?}", request_id);
-                            //   },
-                            //   None => {
-                            //     tracing::warn!("there is no tee operator");
-                            //   },
-                            // }
-
-                            // // start dispatch opml task
-                            // tracing::debug!("dispatch opml task {:#?}", request_id);
-                            // let opml_request = OpmlRequest {
-                            //   model: model.clone(),
-                            //   prompt: message.clone(),
-                            //   req_id: request_id.clone(),
-                            //   callback: callback_url.clone(),
-                            // };
-
-                            // if let Err(e) = create_opml_question(&mut conn, request_id.clone(), &opml_request) {
-                            //   tracing::error!("Failed to store OPML question: {:?}", e);
-                            // }
-
-                            // // Send the request to the OPML server
-                            // if let Err(e) = server.send_opml_request(opml_request).await {
-                            //   tracing::error!("Failed to send OPML request: {:?}", e);
-                            // }
-                        }
-                        // tracing::debug!("dispatch task end {:#?}", request_id);
-                    }
                 } else {
                     tracing::info!("JobRequest other {:#?}", event.kind());
                 }
@@ -215,4 +103,5 @@ pub async fn subscription_service(
 
     tracing::info!("Subscription ID: [auto-closing] end {:#?}", sub);
     job_status_submit.await.unwrap();
+    Ok(())
 }

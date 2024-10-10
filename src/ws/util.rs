@@ -12,8 +12,7 @@ use super::msg::{ConnectParams, JobResultParams, WsMethodMsg};
 
 pub async fn handle_command_msg(msg: &String, _tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
     let method_msg = convert_to_msg(msg)?;
-    tracing::debug!("receive {:#?}", &method_msg.method);
-    let method = method_msg.method.ok_or(anyhow!("the method is empty"))?;
+    let method = method_msg.method.unwrap_or(String::new());
     tracing::debug!("Receive method msg {:#?}", method);
     match method.as_str() {
         "connect" => {}
@@ -33,6 +32,7 @@ pub async fn connect_to_dispatcher(
     msg: &WsMethodMsg,
     tx: mpsc::Sender<Message>,
     server: SharedState,
+    remote_addr: &String,
 ) -> Result<String, ()> {
     let operator = msg.params.clone().and_then(|p| {
         p.as_array().and_then(|v| {
@@ -46,8 +46,9 @@ pub async fn connect_to_dispatcher(
     });
     if let Some(p) = operator {
         tracing::debug!("operator id {} connect", p.operator);
+        tracing::debug!("operator remote_addr {} connect", remote_addr);
         let mut server = server.0.write().await;
-        server.operator_channels.insert(p.operator.clone(), tx);
+        server.operator_channels.insert(remote_addr.clone(), tx);
         return Ok(p.operator.clone());
     }
     Err(())
@@ -58,7 +59,7 @@ pub async fn receive_job_result(
     _tx: mpsc::Sender<Message>,
     server: SharedState,
 ) -> anyhow::Result<()> {
-    tracing::debug!("receive job result");
+    tracing::debug!("🌏 receive job result");
     let result = msg.params.clone().and_then(|p| {
         p.as_array().and_then(|v| {
             let a = v.get(0);
@@ -67,7 +68,6 @@ pub async fn receive_job_result(
                 return p;
             }
             None
-
         })
     });
     if let Some(p) = result {
@@ -80,20 +80,18 @@ pub async fn receive_job_result(
                 p.job_id.clone(),
                 p.tag.clone().unwrap_or_default()
             ),
+            verify_id: p.job_id.clone(),
             job_id: p.job_id.clone(),
             operator: p.operator,
             result: p.result.into(),
-            signature: "".into(),
+            vrf: p.vrf.unwrap_or_default(),
+            signature: p.signature.clone(),
             job_type: "".into(),
             tag: p.tag.unwrap_or_default(),
-            clock: json!({
-                "1": "2",
-            }),
+            clock: p.clock.unwrap_or(json!({})),
             created_at: chrono::Local::now().naive_local(),
         };
-        let mut conn = server
-            .pg
-            .get()?;
+        let mut conn = server.pg.get()?;
 
         let _ = create_job_result(&mut conn, &jr);
     } else {

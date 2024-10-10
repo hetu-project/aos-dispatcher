@@ -15,7 +15,7 @@ use util::{connect_to_dispatcher, handle_command_msg, receive_job_result};
 // use futures::{sink::SinkExt, stream::StreamExt};
 use std::net::SocketAddr;
 
-use crate::server::server::SharedState;
+use crate::{message::MessageVerify, server::server::SharedState};
 
 pub mod msg;
 pub mod util;
@@ -35,7 +35,7 @@ pub async fn handler(
 
     {
         let mut server = server.0.write().await;
-        server.worker_channels.insert(addr.to_string(), tx.clone());
+        // server.worker_channels.insert(addr.to_string(), tx.clone());
         dispatch_tx = server.dispatch_task_tx.clone().unwrap();
     }
 
@@ -49,13 +49,22 @@ async fn handle_socket(
     _dispatch_tx: mpsc::Sender<u32>,
     server: SharedState,
 ) {
+    let remote_addr = who.to_string();
     tracing::info!("{} ws connect", who);
     let mut connect_operator = None;
+
+    // let message_verify;
+    // {
+    //     let mut server = server.0.write().await;
+    //     let signer = server.ecdsa_signer.clone();
+    //     message_verify = MessageVerify { signer };
+    // }
     loop {
         tokio::select! {
           // client send to dispatcher
           Some(msg) = socket.recv() => {
               if let Ok(msg) = msg {
+                tracing::debug!("{}------------------ handle receive ws message start", "🚀");
                 match &msg {
                     Message::Text(t) => {
 
@@ -65,19 +74,25 @@ async fn handle_socket(
                       // TODO reactor for handle msg
                       match handle_command_msg(&t, tx.clone()).await {
                           Ok(_) => {
-                            tracing::debug!("handle msg success");
+                            tracing::debug!("convert to method msg success");
                           },
                           Err(err) => {
-                            tracing::error!("handle msg error {}", err);
+                            tracing::error!("Failed to convert message '{}' to method message: {}", t, err);
                           },
                       };
                       let command = util::convert_to_msg(t);
                       if let Ok(method_msg) = command {
-                        tracing::debug!("Receive method msg {:#?}", method_msg);
+                        if let Ok(b)  = MessageVerify::verify_message(&method_msg) {
+                            if !b {
+                              tracing::error!("verify error msg {:#?}", method_msg);
+                              continue;
+                            }
+                        };
+
 
                          if &method_msg.method == &Some("connect".into()) {
                           let result: WsResultMsg;
-                          if let Ok(op) = connect_to_dispatcher(&method_msg, tx.clone(), server.clone()).await {
+                          if let Ok(op) = connect_to_dispatcher(&method_msg, tx.clone(), server.clone(), &remote_addr).await {
                             result = WsResultMsg {
                               id: method_msg.id.clone(),
                               result: json!({
@@ -88,7 +103,6 @@ async fn handle_socket(
                               hash: "".into(),
                               signature: "".into(),
                             };
-                            tracing::debug!("method {:#?}", method_msg);
                             connect_operator = Some(op);
 
                           } else {
@@ -120,8 +134,6 @@ async fn handle_socket(
                               hash: "".into(),
                               signature: "".into(),
                             };
-                            tracing::debug!("method {:#?}", method_msg);
-
                           } else {
                             result = WsResultMsg {
                               id: method_msg.id.clone(),
@@ -146,8 +158,6 @@ async fn handle_socket(
                             hash: "".into(),
                             signature: "".into(),
                           };
-                          tracing::debug!("result {:#?}", method_msg);
-
                          }
 
                       }
@@ -167,6 +177,8 @@ async fn handle_socket(
                       break;
                     },
                 };
+
+                tracing::debug!("🚀------------------ handle receive ws message end");
                 // msg
                 // Message::Pong(vec![])
               } else {
@@ -175,20 +187,19 @@ async fn handle_socket(
               };
           },
           Some(msg) = rx.recv() => {
-            tracing::debug!("send message to client");
+            tracing::debug!("send message to operator");
             if socket.send(msg).await.is_err() {
                   // client disconnected
+                  tracing::error!("send message to operator error and disconnected");
                   return;
               }
           }
 
         }
     }
-    tracing::info!("{} ws disconnect", who);
+    tracing::info!("operator {:?} on {} ws disconnect", connect_operator, who);
     // clear worker channel
     let mut server = server.0.write().await;
-    server.worker_channels.remove(&who.to_string());
-    if let Some(op) = connect_operator {
-        server.operator_channels.remove(&op);
-    }
+    // server.worker_channels.remove(&who.to_string());
+    server.operator_channels.remove(&remote_addr);
 }

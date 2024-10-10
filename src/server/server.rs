@@ -1,29 +1,26 @@
+use alloy::primitives::keccak256;
+use alloy::signers::local::coins_bip39::English;
+use alloy::signers::local::{MnemonicBuilder, PrivateKeySigner};
 use axum::extract::ws::Message;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use dotenvy::dotenv;
 use ed25519_dalek::{SecretKey, Signature, Signer, SigningKey};
 use rand::rngs::OsRng;
-use reqwest::Client;
 use std::collections::HashMap;
-use std::env;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 
 use crate::config::Config;
-use crate::opml::model::{OpmlAnswer, OpmlRequest};
 use crate::service::nostr::model::JobAnswer;
-use crate::tee::model::{AnswerReq, Operator, OperatorReq, OperatorResp, WorkerStatus};
 
 #[derive(Debug, Clone)]
 pub struct Server {
     pub config: Config,
     pub sign_key: SigningKey,
     pub nostr_keys: nostr::Keys,
-    pub tee_operator_collections: HashMap<String, Operator>,
+    pub ecdsa_signer: PrivateKeySigner,
     pub pg: Pool<ConnectionManager<PgConnection>>,
-    pub tee_channels: HashMap<String, mpsc::Sender<AnswerReq>>,
-    pub opml_channels: HashMap<String, mpsc::Sender<OpmlAnswer>>,
     pub worker_channels: HashMap<String, mpsc::Sender<Message>>,
     pub operator_channels: HashMap<String, mpsc::Sender<Message>>,
     pub dispatch_task_tx: Option<mpsc::Sender<u32>>,
@@ -44,6 +41,14 @@ impl SharedState {
     }
 }
 
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+fn run_migration(conn: &mut PgConnection) -> anyhow::Result<()> {
+    conn.run_pending_migrations(MIGRATIONS).expect("run migration error");
+    Ok(())
+}
+
 impl Server {
     pub async fn new(
         config: Config,
@@ -54,90 +59,46 @@ impl Server {
         // let sign_key = SigningKey::generate(&mut csprng);
         let secret_key: SecretKey = config.secret_key;
         let sign_key = SigningKey::from(secret_key);
-        let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap());
+        let account = config
+            .custom_config
+            .account
+            .clone()
+            .and_then(|c| c.mnemonic.clone())
+            .expect("no account config");
+        let evm_signer = MnemonicBuilder::<English>::default()
+            .phrase(account)
+            .build()
+            .expect("error build account");
+        let address = evm_signer.address().to_string();
+        tracing::debug!("evm address: {}", address);
+
+        let ecdsa_signer = evm_signer;
+        // let ecdsa_signer = PrivateKeySigner::from_slice(&secret_key).expect("error ecdsa singer");
+        let nostr_keys = nostr::Keys::new(nostr::SecretKey::from_slice(&secret_key).unwrap_or(nostr::SecretKey::generate()));
         dotenv().ok();
 
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let db_url = config.custom_config.db.clone().and_then(|db| db.url);
+
+        let database_url = db_url.expect("DATABASE_URL must be set");
         let manager = ConnectionManager::<PgConnection>::new(database_url);
         let pg = Pool::builder()
             .build(manager)
             .expect("Failed to create pool.");
 
+        let mut conn = pg.get().expect("Failed to get conn.");
+
+        run_migration(&mut conn).expect("run migration error");
+
         Self {
             config,
             sign_key,
             nostr_keys,
-            tee_operator_collections: Default::default(),
+            ecdsa_signer,
             pg,
-            tee_channels: Default::default(),
-            opml_channels: Default::default(),
             worker_channels: Default::default(),
             operator_channels: Default::default(),
             dispatch_task_tx: Some(dispatch_task_tx),
             job_status_tx: Some(job_status_tx),
         }
     }
-
-    pub fn sign(&self, message: &[u8]) -> Signature {
-        self.sign_key.sign(message)
-    }
-
-    pub fn verify(&self, message: &[u8], signature: &Signature) -> bool {
-        self.sign_key.verify(message, signature).is_ok()
-    }
-
-    pub fn add_worker(
-        &mut self,
-        worker_name: String,
-        check_heart_beat: bool,
-        worker_status: WorkerStatus,
-        multimodal: bool,
-    ) {
-        let worker_name_clone = worker_name.clone();
-        let operator = Operator {
-            worker_name: worker_name_clone,
-            check_heart_beat,
-            worker_status,
-            multimodal,
-        };
-        self.tee_operator_collections.insert(worker_name, operator);
-    }
-
-    pub async fn send_tee_inductive_task(
-        &self,
-        worker_name: String,
-        req: OperatorReq,
-    ) -> OperatorResp {
-        let operator = self.tee_operator_collections.get(&worker_name).unwrap();
-        let op_url = format!("{}/api/v1/question", operator.worker_name);
-        //let client = Client::builder().proxy(reqwest::Proxy::http("http://127.0.0.1:8080")?).build().unwrap();
-        let resp = Client::new().post(op_url).json(&req).send().await.unwrap();
-
-        resp.json::<OperatorResp>().await.unwrap()
-    }
-
-    pub async fn send_opml_request(
-        &self,
-        req: OpmlRequest,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        tracing::info!("Sending opml request {:?}", req);
-        let client = reqwest::Client::new();
-        let opml_server_url = format!("{}/api/v1/question", "http://127.0.0.1:1234");
-
-        let response = client.post(opml_server_url).json(&req).send().await?;
-
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(format!("OPML server responded with status: {}", response.status()).into())
-        }
-    }
-}
-
-pub async fn sign_handler() -> String {
-    let mut csprng = OsRng;
-    let key = SigningKey::generate(&mut csprng);
-    let message: &[u8] = b"Hello, World!";
-    let signature = key.sign(message);
-    signature.to_string()
 }

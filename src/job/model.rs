@@ -4,7 +4,7 @@ use nostr_sdk::{Event, EventBuilder, Keys, SingleLetterTag, Tag};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::db::pg::model::{JobRequest, Question};
+use crate::db::pg::model::JobRequest;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmitJob {
@@ -33,7 +33,7 @@ pub struct JobResultResp {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobVerifyReq {
-    pub job_id: String,
+    // pub job_id: String,
     pub user: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,32 +75,6 @@ impl JobTask {
             job,
             submit: req.clone(),
         }
-    }
-}
-
-impl Into<Question> for JobTask {
-    fn into(self) -> Question {
-        let id = self.event.id.to_string();
-        let message = "".into();
-        let message_id = self.event.id.to_string();
-        let conversation_id = "".into();
-        let model = "".into();
-        let callback_url = "".into();
-        let status = "".into();
-        let job_type = "".into();
-
-        let q = Question {
-            request_id: id,
-            message: message,
-            message_id: message_id,
-            conversation_id: conversation_id,
-            model: model,
-            callback_url: callback_url,
-            status: status,
-            job_type: job_type,
-            created_at: chrono::Local::now().naive_local(),
-        };
-        q
     }
 }
 

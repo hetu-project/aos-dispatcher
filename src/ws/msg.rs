@@ -59,6 +59,8 @@ pub struct JobResultParams {
     pub user: Option<String>,
     pub tag: Option<String>,
     pub result: Value,
+    pub vrf: Option<Value>,
+    pub clock: Option<Value>,
     pub operator: String,
     // pub hash: String,
     pub signature: String,

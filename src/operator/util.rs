@@ -59,6 +59,10 @@ pub async fn register_operator(
         // .password(password)
         .build()?;
 
+    let singer_address = singer.address().to_string();
+
+    tracing::info!("singer_address: {}", singer_address);
+
     let wallet = EthereumWallet::from(singer);
     // wallet.default_signer().address();
     let owner_address = wallet.default_signer().address();

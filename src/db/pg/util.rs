@@ -3,9 +3,7 @@ use diesel::prelude::*;
 use diesel::upsert::excluded;
 use serde::Deserialize;
 
-use crate::db::pg::model::{Answer, Question};
-use crate::schema::answers::dsl::request_id as answer_request_id;
-use crate::schema::{self, answers, job_request, job_result, operator};
+use crate::schema::{self, job_request, job_result, operator};
 
 use super::model::{JobRequest, JobResult, Operator, User};
 
@@ -25,28 +23,6 @@ where
     NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S").map_err(serde::de::Error::custom)
 }
 
-pub fn create_question(
-    conn: &mut PgConnection,
-    q: &Question,
-) -> Result<Question, diesel::result::Error> {
-    diesel::insert_into(crate::schema::questions::table)
-        .values(q)
-        .returning(Question::as_returning())
-        .get_result(conn)
-    // .expect("Error saving new question")
-}
-
-pub fn create_job_answer(
-    conn: &mut PgConnection,
-    ans: &Answer,
-) -> Result<(), diesel::result::Error> {
-    diesel::insert_into(crate::schema::answers::table)
-        .values(ans)
-        .execute(conn)?;
-
-    Ok(())
-}
-
 pub fn create_operator(
     conn: &mut PgConnection,
     op: &Operator,
@@ -57,16 +33,6 @@ pub fn create_operator(
         .execute(conn)?;
 
     Ok(())
-}
-
-pub fn get_answer_by_id(
-    conn: &mut PgConnection,
-    q_id: &str,
-) -> Result<Option<Answer>, diesel::result::Error> {
-    answers::table
-        .filter(answer_request_id.eq(q_id))
-        .first::<Answer>(conn)
-        .optional()
 }
 
 pub fn sync_operators_info(
@@ -146,6 +112,16 @@ pub fn get_job_results_by_job_id(
         .load(conn)
 }
 
+pub fn get_job_request_by_job_id(
+    conn: &mut PgConnection,
+    q_id: &str,
+) -> Result<JobRequest, diesel::result::Error> {
+    job_request::table
+        .select(JobRequest::as_select())
+        .filter(job_request::id.eq(q_id))
+        .first(conn)
+}
+
 pub fn get_job_verify_by_user_id(
     conn: &mut PgConnection,
     id: &str,
@@ -154,6 +130,8 @@ pub fn get_job_verify_by_user_id(
         .left_join(job_request::table)
         .select(JobResult::as_select())
         .filter(job_request::user.eq(id))
+        .order(job_result::created_at.desc())
+        .limit(100)
         .load(conn)
 }
 
@@ -175,7 +153,7 @@ pub fn query_oldest_job_request_with_user(
 ) -> Result<Vec<JobRequest>, diesel::result::Error> {
     let r = job_request::table
         .select(JobRequest::as_select())
-        .filter(job_request::id.eq(user))
+        .filter(job_request::user.eq(user))
         .order(job_request::created_at.desc())
         .limit(10)
         // .as_query()
@@ -205,7 +183,10 @@ pub fn create_user(conn: &mut PgConnection, q: &User) -> Result<User, diesel::re
         .values(q)
         .on_conflict(schema::user::id)
         .do_update()
-        .set(schema::user::tag.eq(q.tag.clone()))
+        .set((
+            schema::user::tag.eq(&q.tag),
+            schema::user::count.eq(&q.count),
+        ))
         .returning(User::as_returning())
         .get_result(conn)
     // .expect("Error saving new question")

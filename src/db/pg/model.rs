@@ -20,42 +20,6 @@ where
 }
 
 #[derive(Queryable, Selectable, Insertable, Serialize)]
-#[diesel(table_name = crate::schema::questions)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Question {
-    pub request_id: String,
-    pub message: String,
-    pub message_id: String,
-    pub conversation_id: String,
-    pub model: String,
-    pub callback_url: String,
-    pub job_type: String,
-    pub status: String,
-    #[serde(serialize_with = "serialize_naive_datetime")]
-    pub created_at: NaiveDateTime,
-}
-
-#[derive(Queryable, Selectable, Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = crate::schema::answers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Answer {
-    pub request_id: String,
-    pub node_id: String,
-    pub model: String,
-    pub prompt: String,
-    pub answer: String,
-    pub attestation: String,
-    pub attest_signature: String,
-    pub elapsed: i32,
-    pub job_type: String,
-    #[serde(
-        serialize_with = "serialize_naive_datetime",
-        deserialize_with = "deserialize_naive_datetime"
-    )]
-    pub created_at: NaiveDateTime,
-}
-
-#[derive(Queryable, Selectable, Insertable, Serialize)]
 #[diesel(table_name = crate::schema::operator)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Operator {
@@ -93,6 +57,8 @@ pub struct JobResult {
     pub job_id: String,
     pub operator: String,
     pub result: Value,
+    pub verify_id: String,
+    pub vrf: Value,
     pub clock: Value,
     pub signature: String,
     pub job_type: String,
@@ -109,6 +75,7 @@ pub struct Project {
     pub name: String,
     pub address: String,
     pub status: String,
+    pub token: String,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,
 }
@@ -120,7 +87,9 @@ pub struct User {
     pub id: String,
     pub name: String,
     pub address: String,
+    pub verify_id: String,
     pub status: String,
+    pub count: i32,
     pub tag: String,
     #[serde(serialize_with = "serialize_naive_datetime")]
     pub created_at: NaiveDateTime,

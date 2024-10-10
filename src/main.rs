@@ -1,7 +1,8 @@
+use aos_dispatcher::admin;
 use aos_dispatcher::config::CustomConfig;
+use aos_dispatcher::error::handle_error;
 use aos_dispatcher::server::server::SharedState;
 use aos_dispatcher::service::nostr::model::JobAnswer;
-use aos_dispatcher::tee::handler::*;
 use aos_dispatcher::ws;
 use axum::error_handling::HandleErrorLayer;
 use axum::http::Method;
@@ -21,15 +22,21 @@ use tracing::Level;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let custom_config = CustomConfig::from_toml().await;
     let config = aos_dispatcher::config::Config::new().merge(&custom_config);
-    let max_level = if let Some(cl) = &custom_config.log_level {
-        tracing::Level::from_str(&cl).unwrap_or(Level::INFO)
-    } else {
-        Level::INFO
-    };
-    let addr = format!("{}:{}", config.server.host, config.server.port);
+    let max_level = custom_config
+        .log
+        .and_then(|c| c.level)
+        .map_or(Level::INFO, |cl| {
+            tracing::Level::from_str(&cl).unwrap_or(Level::INFO)
+        });
+    let server_addr = custom_config
+        .server
+        .map_or((String::from("0.0.0.0"), 3000), |s| {
+            (s.host.unwrap_or("0.0.0.0".into()), s.port.unwrap_or(3000))
+        });
+    let addr = format!("{}:{}", server_addr.0, server_addr.1);
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .with_max_level(max_level)
@@ -62,22 +69,17 @@ async fn main() {
 
     // build our application with a single route
     let app = Router::new()
-        // .route("/ping", get(|| async { "pong" }))
-        // .route("/sign", post(sign))
-        // .route("/register_worker", post(register_worker))
-        // .route("/receive_heart_beat", post(receive_heart_beat))
         .route("/api/operator/register", post(operator::handler::register))
         .route("/api/operator/info", post(operator::handler::operator_info))
         .route("/api/job/submit", post(job::handler::submit_job))
         .route("/api/job/result", post(job::handler::query_job_result))
-        .route("/api/job/verify", post(job::handler::query_job_result))
-        // .route("/api/tee_callback", post(tee_callback))
-        // .route("/api/opml_question", post(opml_question_handler))
-        // .route("/api/opml_callback", post(opml_callback))
-        // .route("/api/list_models", post(list_models))
-        // .route("/admin/list_workers", post(list_workers))
-        // .route("/admin/list_questions", post(list_questions_handler))
-        // .route("/admin/list_answers", post(list_answers_handler))
+        .route("/api/job/detail", post(job::handler::query_job_detail))
+        .route("/api/job/verify", post(job::handler::query_job_verify))
+        .route(
+            "/api/admin/project/register",
+            post(admin::handler::register),
+        )
+        .route("/api/admin/project/list", post(admin::handler::white_list))
         .route("/ws", get(ws::handler))
         .with_state(server)
         .layer(cors)
@@ -110,9 +112,12 @@ async fn main() {
         }
     });
 
-    let _ = tokio::join!(
+    let (server_result, dispatch_result) = tokio::join!(
         // nostr_sub_task,
         server_task,
         dispatch_task,
     );
+    server_result?;
+    dispatch_result?;
+    Ok(())
 }
